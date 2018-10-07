@@ -1,0 +1,6 @@
+# temp files
+*~
+*.elc
+[#]*[#}
+# binaries
+a.out
