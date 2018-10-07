@@ -12,6 +12,8 @@
 #define _IC_LEN_ELT _IC_LEN_LOGICAL/2 // approx
 #define _IC_LEN_NAME 20
 #define ICS_FILE "example.ics"
+/* shorthand */
+#define array_len(array) sizeof(array)/sizeof(array[0])
 
 /* prototypes (will be included in proto.h */
 /* private */
@@ -29,11 +31,32 @@ struct icContline {
   char value[_IC_LEN_ELT];
 };
 
+struct icDate {
+  /* we do not use standard C 'time'/epoch for compatibility with
+     arduino-ide */
+  int year; 
+  int month;
+  int day;
+  int hours;
+  int minutes;
+  int seconds;
+  /* may be extended later */
+};
+
+struct icVevent {
+  char summary[_IC_LEN_ELT];
+  char description[_IC_LEN_ELT];
+  char location[_IC_LEN_ELT];
+  struct icDate dtstamp;
+  struct icDate dtstart;
+  struct icDate dtend;
+};
   
 /* general variables */
-char curline[_IC_LEN_LOGICAL]; // used to store iCalendar logical lines, we
+static char curline[_IC_LEN_LOGICAL]; // used to store iCalendar logical lines, we
 		      // assume that no line will be longer than
-		      // _IC_LEN_LOGICAL 
+		      // _IC_LEN_LOGICAL
+static const int true = 1, false = 0;
 
 /* main fun */
 int main (int arc, int **argv){
@@ -49,16 +72,73 @@ int main (int arc, int **argv){
   
 }
 
+/* parse a date in the iCalendar format, returning a icDate
+   struct. iCalendar date format is YYYYMMDDThhmmssZ*/
+struct icDate
+_ic_parse_date (char *datevalue)
+{
+  struct icDate current;
+  char tmp[] = "\0\0\0\0";
+  int i;
+  struct _parser {
+    char *start;
+    size_t cpysize;
+    int *storto;
+  };
+  struct _parser dv_parser [] = {
+    {&datevalue[array_len("YYYYMMDDThhmm")-1],sizeof("ss")-1,  &current.seconds},
+    {&datevalue[array_len("YYYYMMDDThh")-1],  sizeof("mm")-1,  &current.minutes},
+    {&datevalue[array_len("YYYYMMDDT")-1],    sizeof("hh")-1,  &current.hours},
+    {&datevalue[array_len("YYYYMM")-1],       sizeof("DD")-1,  &current.day},
+    {&datevalue[array_len("YYYY")-1],         sizeof("MM")-1,  &current.month},
+    {&datevalue[0],                           sizeof("YYYY")-1,&current.year}
+  };
+    
+  /* do some format-validation. not checking for outbounds read, sorry */
+  if (datevalue[array_len("YYYYMMDD")-1] == 'T'
+      && datevalue[array_len("YYYYMMDDThhmmss")-1] == 'Z'){
+    for (i=0; i<=array_len(dv_parser)-1; i++){
+      memset(tmp,'\0',sizeof(tmp));
+      memcpy(tmp, dv_parser[i].start, dv_parser[i].cpysize);
+      *(dv_parser[i].storto) = atoi(tmp);
+    }
+  }
+    
+  return current;
+}
+
 void /* for now */ get_ic_events(char *icsbuf){
   char *ic_line; // pointer to global _currentline
   struct icContline linecontents;
+  struct icVevent vevent;
+  int in_vevent = false;
+  
 
   while ((ic_line = _get_next_line(icsbuf)) != NULL){
-    /* Analyze the line. We're
-     * not covering the whole iCalendar standard here, but only
-     * Vevents mostly */
-    linecontents = ic_analyze_contentline(ic_line);
-    printf("name:%s\tvalue:%s\n",linecontents.name, linecontents.value);
+    /* Analyze the iCalendar buffer, searching for iCalendar
+     * objects. We're not covering the whole iCalendar standard here,
+     * but only Vevents mostly */
+    // TODO: Nested objects
+    linecontents = ic_analyze_contentline(ic_line); // get it
+    if(strcmp(linecontents.name,"BEGIN") == 0 &&
+       strcmp(linecontents.value,"VEVENT") == 0) /* open new event */
+      in_vevent = true;
+    else if(strcmp(linecontents.name,"END") == 0 &&
+	    strcmp(linecontents.value,"VEVENT") == 0)/* close event */
+      in_vevent = false;
+    if(in_vevent){
+      if(strcmp(linecontents.name,"DTSTART") == 0){
+	vevent.dtstart = _ic_parse_date(linecontents.value);
+	/* Houston, this is a test
+	printf("year:%d month:%d day:%d hours:%d minutes:%d seconds:%d\n",vevent.dtstart.year,
+	       vevent.dtstart.month,
+	       vevent.dtstart.day,
+	       vevent.dtstart.hours,
+	       vevent.dtstart.minutes,
+	       vevent.dtstart.seconds);
+	*/
+      }
+    }
   }
 }
 
@@ -67,12 +147,14 @@ void /* for now */ get_ic_events(char *icsbuf){
  * return a struct with its fields. contentline
  * must be '\0'-terminated and syntaxically correct,
  * no sanity check is performed ! (bad) */
-struct icContline ic_analyze_contentline(char *contentline){
+struct icContline
+ic_analyze_contentline(char *contentline)
+{
   int offset = 0;
   int value_off = 0, name_off = 0;
   int column_cnt = 0, semicolumn_cnt = 0, eq_cnt = 0, comma_cnt = 0, dblquote_cnt = 0;
   char prev_char = '*'; // not '\\'
-  int skip_char; const int true = 1; const int false = 0;
+  int skip_char;
   struct icContline analysis;
   
   /* contentline   = name *(";" param ) ":" value CRLF */
