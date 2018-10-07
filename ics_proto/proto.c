@@ -1,3 +1,6 @@
+/* For more info on iCalendar, see RFC 5545
+ * Doc here also: https://www.kanzaki.com/docs/ical/
+ */
 #include "proto.h"
 #include <stdio.h>
 #include <errno.h>
@@ -7,6 +10,7 @@
 
 #define _IC_LEN_LOGICAL 1024
 #define _IC_LEN_ELT _IC_LEN_LOGICAL/2 // approx
+#define _IC_LEN_NAME 20
 #define ICS_FILE "example.ics"
 
 /* prototypes (will be included in proto.h */
@@ -24,6 +28,7 @@ struct icContline {
   char **params;
   char value[_IC_LEN_ELT];
 };
+
   
 /* general variables */
 char curline[_IC_LEN_LOGICAL]; // used to store iCalendar logical lines, we
@@ -45,15 +50,15 @@ int main (int arc, int **argv){
 }
 
 void /* for now */ get_ic_events(char *icsbuf){
-  char *icsline; // pointer to global _currentline
+  char *ic_line; // pointer to global _currentline
   struct icContline linecontents;
-  
-  while ((icsline = _get_next_line(icsbuf)) != NULL){
+
+  while ((ic_line = _get_next_line(icsbuf)) != NULL){
     /* Analyze the line. We're
      * not covering the whole iCalendar standard here, but only
-     * "BEGIN", "END", "CALSCALE", "DTSTART", "DTEND", "SUMMARY",
-     * "LOCATION", "DESCRIPTION" names (most useful) */
-    linecontents = ic_analyze_contentline(icsline);
+     * Vevents mostly */
+    linecontents = ic_analyze_contentline(ic_line);
+    printf("name:%s\tvalue:%s\n",linecontents.name, linecontents.value);
   }
 }
 
@@ -65,7 +70,9 @@ void /* for now */ get_ic_events(char *icsbuf){
 struct icContline ic_analyze_contentline(char *contentline){
   int offset = 0;
   int value_off = 0, name_off = 0;
-  char dbl_point_cnt = 0, pt_comma_cnt = 0, eq_cnt = 0, comma_cnt = 0;
+  int column_cnt = 0, semicolumn_cnt = 0, eq_cnt = 0, comma_cnt = 0, dblquote_cnt = 0;
+  char prev_char = '*'; // not '\\'
+  int skip_char; const int true = 1; const int false = 0;
   struct icContline analysis;
   
   /* contentline   = name *(";" param ) ":" value CRLF */
@@ -76,24 +83,34 @@ struct icContline ic_analyze_contentline(char *contentline){
   memset(analysis.value,'\0',sizeof(analysis.value));
     
   while (contentline[offset] != '\0'){
-    /* delimiters from left to right,
-     * determines if we have hit a delimiter, count it and skip it
-     * (we do not want to copy it) */
-    switch (contentline[offset]){
-    case ';': /* param delimiter */            ++pt_comma_cnt;  ++offset; break;
-    case ':': /* name and params delimiter */  ++dbl_point_cnt; ++offset; break;
-    case '=': /* param name delimiter */       ++eq_cnt;        ++offset; break;
-    case ',': /* params value delimiter */     ++comma_cnt;     ++offset; break;
+    /* string & delimiters tester */
+    if (contentline[offset] == '"' && prev_char != '\\')
+      ++dblquote_cnt;
+    else if (dblquote_cnt%2 == 0){ // we're not in a string and current char is not '"'
+      /* delimiters from left to right,
+       * determines if we have hit a delimiter, count it and skip it
+       * (we do not want to copy it) */
+      skip_char = false;
+      switch (contentline[offset]){
+      case ';': /* param delimiter */           ++semicolumn_cnt; skip_char=true; break;
+      case ':': /* name and params delimiter */ ++column_cnt;     skip_char=true; break;
+      case '=': /* param name delimiter */      ++eq_cnt; /* skip ? */            break;
+      case ',': /* params value delimiter */    ++comma_cnt; /* skip ? */         break;
+      }
     }
-    if(pt_comma_cnt == 0 && dbl_point_cnt == 0){
-      /* still in name part, copy name */
-      analysis.name[name_off++] = contentline[offset];
-    }else if (pt_comma_cnt > 0 && dbl_point_cnt == 0){
-      /* param part, undefined behaviour (not implemented) */
-    }else if (pt_comma_cnt > 0 || dbl_point_cnt > 0){
-      /* parameter is optional, so pt_comma_cnt may be == 0 */
-      /* value part, copy value */
-      analysis.value[value_off++] = contentline[offset];
+    prev_char = contentline[offset];
+    /* copy correct parts in struct */
+    if (skip_char == false){
+      if(semicolumn_cnt == 0 && column_cnt == 0){
+	/* still in name part, copy name */
+	analysis.name[name_off++] = contentline[offset];
+      }else if (semicolumn_cnt > 0 && column_cnt == 0){
+	/* param part, undefined behaviour (not implemented) */
+      }else if (semicolumn_cnt > 0 || column_cnt > 0){
+	/* parameter is optional, so semicolumn_cnt may be == 0 */
+	/* value part, copy value */
+	analysis.value[value_off++] = contentline[offset];
+      }
     }
     ++offset;
   }
