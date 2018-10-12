@@ -8,7 +8,13 @@ class ICDate {
   ICDate();
   void set(int year=1970, int month=01, int day=01, int hours=0,
       int minutes=0, int seconds=0);
-  void parse(char *datevalue);
+  void setFromIC(char *datevalue);
+  unsigned int getYear(void);
+  unsigned int getMonth(void);
+  unsigned int getDay(void);
+  unsigned int getHours(void);
+  unsigned int getMinutes(void);
+  unsigned int getSeconds(void);
  private:
   unsigned int year, month, day, hours, minutes, seconds;
 };
@@ -18,6 +24,8 @@ class ICline {
   ICline();
   char *getName();
   char *getValue();
+  void setName(char *);
+  void setValue(char *);
  private:
   char name[IC_LINELEN];
   char value[IC_LINELEN];
