@@ -8,7 +8,7 @@ class ICDate {
   ICDate();
   void set(int year=1970, int month=01, int day=01, int hours=0,
       int minutes=0, int seconds=0);
-  void setFromIC(char *datevalue);
+  void setFromICString(char *datevalue);
   unsigned int getYear(void);
   unsigned int getMonth(void);
   unsigned int getDay(void);
@@ -17,6 +17,7 @@ class ICDate {
   unsigned int getSeconds(void);
  private:
   unsigned int year, month, day, hours, minutes, seconds;
+  void check(void);
 };
 
 class ICline {
@@ -24,8 +25,9 @@ class ICline {
   ICline();
   char *getName();
   char *getValue();
-  void setName(char *);
-  void setValue(char *);
+  void setName(char *name);
+  void setValue(char *value);
+  void setFromICString(char *icstr); // _ic_analyze_contentline
  private:
   char name[IC_LINELEN];
   char value[IC_LINELEN];
@@ -53,7 +55,6 @@ class ICalendarParser {
   bool begin(char *icsbuf);
  private:
   char *readNextLine(); // _get_next_line
-  ICline getNextLine(char *contentline); // _ic_analyze_contentline
 };
 
 #endif

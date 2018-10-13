@@ -1,7 +1,6 @@
 /* Trying to follow arduino API style reccomandations
    here */
 #include "ICalendarParser.h"
-#define TESTING
 #ifdef TESTING
 #include <stdlib.h>
 #include <string.h>
@@ -17,19 +16,24 @@ ICDate ICVevent::getDtend(void) {
 ICalendarParser::ICalendarParser(void){}
 bool ICalendarParser::begin(char *icsbuf){}
 char *ICalendarParser::readNextLine(void){}
-ICline ICalendarParser::getNextLine(char *contentline){}
 ICObject &ICalendarParser::getNext(void){}
 
-/* ************** ICDate ******************** */
+/* **************** ICDate ******************** */
 ICDate::ICDate(void){}
 /** "manual" setter */
 void ICDate::set(int year, int month, int day, int hours, int minutes, int seconds){
-  this->year = year;
-  this->month = month%12;
-  this->day = day%31; // TODO: add more checks
-  this->hours = hours%24;
-  this->minutes = minutes%60;
-  this->seconds = seconds%60;
+  // just copying 1st
+  this->year = year; this->month = month; this->day = day; this->hours = hours; this->minutes = minutes; this->seconds = seconds;
+  (this->check)(); // then check
+}
+/** checks and corrects state if needed */
+void ICDate::check(void){
+  // no need to check anything for year
+  if (this->month > 12){this->month = this->month%12;}
+  if (this->day > 31){this->day = this->day%31;} // basic
+  if (this->hours > 24){this->hours = this->hours%24;}
+  if (this->minutes > 60){this->minutes = this->minutes%60;}
+  if (this->seconds > 60){this->seconds = this->seconds%60;}
 }
 /* getters */
 unsigned int ICDate::getYear(void){return this->year;}
@@ -39,7 +43,7 @@ unsigned int ICDate::getHours(void){return this->hours;}
 unsigned int ICDate::getMinutes(void){return this->minutes;}
 unsigned int ICDate::getSeconds(void){return this->seconds;}
 /** setter from ICalendar-formatted date */
-void ICDate::setFromIC(char datevalue[]){
+void ICDate::setFromICString(char *datevalue){
   char tmp[] = "\0\0\0\0";
   int i;
   struct _parser {
@@ -64,6 +68,7 @@ void ICDate::setFromIC(char datevalue[]){
       *(dv_parser[i].storto) = atoi(tmp);
     }
   }
+  (this->check)();
 }
 
 /* ******************** ICline *************** */
@@ -72,3 +77,4 @@ char *ICline::getName(void){return this->name;}
 char *ICline::getValue(void){return this->value;}
 void ICline::setName(char *name){strncpy(this->name,name,sizeof(this->name)-1);}
 void ICline::setValue(char *value){strncpy(this->value,value,sizeof(this->value)-1);}
+void ICline::setFromICString(char *icstr){} // _ic_analyze_contentline
