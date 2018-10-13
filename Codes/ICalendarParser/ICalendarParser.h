@@ -1,7 +1,21 @@
+/* ICalendar parsing lib, Arduino-style (somewhat)
+ * For more info on iCalendar, see RFC 5545
+ * Doc here also: https://www.kanzaki.com/docs/ical/
+ */
+
 #ifndef ICALENDARPARSER_H
 #define ICALENDARPARSER_H
 
-#define IC_LINELEN 256
+#include <stdlib.h>
+#include <string.h>
+#ifdef TESTING
+#include "Arduino_testing.h"
+#else
+#include "Arduino.h"
+#endif
+
+#define IC_ELMTLEN 128
+#define IC_LEN_LOGICAL 2*IC_ELMTLEN
 
 class ICDate {
  public:
@@ -29,32 +43,41 @@ class ICline {
   void setValue(char *value);
   void setFromICString(char *icstr); // _ic_analyze_contentline
  private:
-  char name[IC_LINELEN];
-  char value[IC_LINELEN];
+  char name[IC_ELMTLEN];
+  char value[IC_ELMTLEN];
 };
 
 class ICObject {
- public:
-  virtual ICDate getDtstart(void)=0;
-  virtual ICDate getDtend(void)=0;
+  /* empty, just an ancestor */
 };
 
 class ICVevent: public ICObject {
  public:
-  virtual ICDate getDtstart(void);
-  virtual ICDate getDtend(void);
+  ICVevent();
+  ICDate getDtstart(void);
+  ICDate getDtend(void);
+  void setDtstart(ICDate);
+  void setDtend(ICDate);
+  void setSummary(const char *summary);
+  char *getSummary(void);
+  void setLocation(const char *location);
+  char *getLocation(void);
  private:
-  ICDate _dtstart;
-  ICDate _dtend;
+  ICDate dtstart;
+  ICDate dtend;
+  char location[IC_ELMTLEN];
+  char summary[IC_ELMTLEN];
 };
 
 class ICalendarParser {
  public:
   ICalendarParser(); // constructor
   ICObject &getNext(void); // get_ic_events
-  bool begin(char *icsbuf);
+  bool begin(const char *icsbuf);
  private:
   char *readNextLine(); // _get_next_line
+  const char *icsbuf;
+  char curline[IC_LEN_LOGICAL];
 };
 
 #endif
