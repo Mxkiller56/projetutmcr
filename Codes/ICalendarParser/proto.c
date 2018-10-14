@@ -1,7 +1,6 @@
 /* For more info on iCalendar, see RFC 5545
  * Doc here also: https://www.kanzaki.com/docs/ical/
  */
-#include "proto.h"
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
@@ -129,14 +128,13 @@ void /* for now */ get_ic_events(char *icsbuf){
     if(in_vevent){
       if(strcmp(linecontents.name,"DTSTART") == 0){
 	vevent.dtstart = _ic_parse_date(linecontents.value);
-	/* Houston, this is a test
+	/* Houston, this is a test */
 	printf("year:%d month:%d day:%d hours:%d minutes:%d seconds:%d\n",vevent.dtstart.year,
 	       vevent.dtstart.month,
 	       vevent.dtstart.day,
 	       vevent.dtstart.hours,
 	       vevent.dtstart.minutes,
 	       vevent.dtstart.seconds);
-	*/
       }
     }
   }
@@ -268,7 +266,7 @@ char *_file2mem (char *filename){
       /* clear buffer after reading */
       memset(buffer, '\0', sizeof(buffer));
       offset+=sizeof(buffer);
-      if(realloc(icsbuf,offset+sizeof(buffer)) == NULL){/* alloc error happened */
+      if((icsbuf = realloc(icsbuf,offset+sizeof(buffer))) == NULL){/* alloc error happened */
       printf("an error as occured while allocating memory");
       return NULL;
     }
