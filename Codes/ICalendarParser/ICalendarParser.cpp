@@ -17,7 +17,7 @@ char *ICVevent::getSummary(void){return this->summary;}
 char *ICVevent::getLocation(void){return this->location;}
 /* **************** ICalendarParser *********** */
 ICalendarParser::ICalendarParser(void){}
-bool ICalendarParser::begin(const char *icsbuf){this->icsbuf = icsbuf;}
+bool ICalendarParser::begin(const char *icsbuf){this->icsbuf = icsbuf; return true;}
 char *ICalendarParser::readNextLine(void){
   int linebuf_off;
   static int buf_off=0; // save buffer offset between each call
