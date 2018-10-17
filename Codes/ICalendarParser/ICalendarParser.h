@@ -14,8 +14,11 @@
 #include "Arduino.h"
 #endif
 
-#define IC_ELMTLEN 128
-#define IC_LEN_LOGICAL 2*IC_ELMTLEN
+// this breaks readNextLine(). Investigate.
+// doesn't break if defined to 256
+// strange break on 235
+#define IC_ELMTLEN (256)
+#define IC_LEN_LOGICAL (2*IC_ELMTLEN)
 
 class ICDate {
  public:
@@ -69,15 +72,43 @@ class ICVevent: public ICObject {
   char summary[IC_ELMTLEN];
 };
 
-class ICalendarParser {
+/* parsers */
+class GenericICalParser {
  public:
-  ICalendarParser(); // constructor
-  ICObject &getNext(void); // get_ic_events
+  GenericICalParser(); // empty constructor
+  ICObject &getNext(); // common, uses readNextLine, curline and ICline object.setFromICString(curline) on stack. get_ic_events in proto.c
+ protected:
+  virtual char *readNextLine();
+  ICObject curr_ic_object;
+  char curline [IC_LEN_LOGICAL]; // common, used to store current "logical" line in both readNextLine methods
+};
+
+/* 1st case: large on memory, you have a big buffer
+ * with ALL ICal data in and want to parse it */
+class ICalBufferParser: public GenericICalParser {
+ public:
+  ICalBufferParser(); // empty constructor
   bool begin(const char *icsbuf);
  private:
-  char *readNextLine(); // _get_next_line
   const char *icsbuf;
-  char curline[IC_LEN_LOGICAL];
+  /* specific ICalBufferParser version */
+  virtual char *readNextLine(); // _get_next_line using icsbuf
 };
+
+/* 2nd case: less large on memory, you have a connection
+ * to an ICal resource and you pass it to the parser,
+ * which uses it to read data from chunk to chunk.
+ * Incoming data is discarded when no longer needed in
+ * order to free memory */
+class ICalStreamParser: public GenericICalParser {
+ public:
+  ICalStreamParser(); // empty constructor
+  bool begin(WifiClient *client);
+ private:
+  WifiClient *client;
+  // specific ICalStreamParser version
+  virtual char *readNextLine(); // _get_next_line using WifiClient stream
+};
+
 
 #endif

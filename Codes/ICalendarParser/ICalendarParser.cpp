@@ -1,4 +1,4 @@
-/* Trying to follow arduino API style reccomandations
+/* Trying to follow arduino API style recommandations
    here. I'm not very okay with references, so I may
    change functions to use refs later if needed */
 #include "ICalendarParser.h"
@@ -15,17 +15,37 @@ void ICVevent::setSummary(const char *summary){strncpy(this->summary,summary,siz
 void ICVevent::setLocation(const char *location){strncpy(this->location,location,sizeof(this->summary)-1);}
 char *ICVevent::getSummary(void){return this->summary;}
 char *ICVevent::getLocation(void){return this->location;}
-/* **************** ICalendarParser *********** */
-ICalendarParser::ICalendarParser(void){}
-bool ICalendarParser::begin(const char *icsbuf){this->icsbuf = icsbuf; return true;}
-char *ICalendarParser::readNextLine(void){
+
+/* **************** GenericICalParser ************ */
+GenericICalParser::GenericICalParser(void){}
+char *GenericICalParser::readNextLine(void){/* does nothing */}
+ICObject &GenericICalParser::getNext(void){
+  ICline ic_curline;
+  int a=0, len;
+  
+  while (this->readNextLine() != NULL){
+    ic_curline.setFromICString(this->curline);
+    if (strcmp(ic_curline.getName(),"BEGIN") == 0){
+      if(strcmp(ic_curline.getValue(),"VEVENT") == 0){
+	a+=1;
+      }
+    }
+  }
+  return this->curr_ic_object;
+}
+
+/* **************** ICalBufferParser *********** */
+ICalBufferParser::ICalBufferParser(void){}
+bool ICalBufferParser::begin(const char *icsbuf){this->icsbuf = icsbuf; return true;}
+char *ICalBufferParser::readNextLine(void){
   int linebuf_off;
   static int buf_off=0; // save buffer offset between each call
 
   /* read everything */
   linebuf_off=0; // init offset in curline
   for(/* buf_off hasn't to be reinitialized */; icsbuf[buf_off]!='\0'; buf_off++){
-    if(icsbuf[buf_off]!='\r' /* CR */){
+    // don't copy if you don't have enough room, just discard !
+    if(icsbuf[buf_off]!='\r' /* CR */ && linebuf_off <= sizeof(this->curline)-2){
       /* we're in a line, so copy */
       this->curline[linebuf_off++]=this->icsbuf[buf_off];
     }else{
@@ -64,7 +84,11 @@ char *ICalendarParser::readNextLine(void){
   buf_off = 0;
   return NULL;
 }
-ICObject &ICalendarParser::getNext(void){}
+
+/* **************** ICalStreamParser ********** */
+ICalStreamParser::ICalStreamParser(void){}
+bool ICalStreamParser::begin(WifiClient *client){return true;}
+char *ICalStreamParser::readNextLine(void){}
 
 /* **************** ICDate ******************** */
 ICDate::ICDate(void){}
