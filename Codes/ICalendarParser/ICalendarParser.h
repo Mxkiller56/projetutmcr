@@ -17,7 +17,7 @@
 // this breaks readNextLine(). Investigate.
 // doesn't break if defined to 256
 // strange break on 235
-#define IC_ELMTLEN (256)
+#define IC_ELMTLEN (100)
 #define IC_LEN_LOGICAL (2*IC_ELMTLEN)
 
 class ICDate {

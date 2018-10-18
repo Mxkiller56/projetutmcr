@@ -2,6 +2,9 @@
    here. I'm not very okay with references, so I may
    change functions to use refs later if needed */
 #include "ICalendarParser.h"
+#ifdef TESTING
+#include <iostream>
+#endif
 
 #define c_array_len(array) sizeof(array)/sizeof(array[0])
 
@@ -24,7 +27,7 @@ ICObject &GenericICalParser::getNext(void){
   int a=0, len;
   
   while (this->readNextLine() != NULL){
-    ic_curline.setFromICString(this->curline);
+    //    ic_curline.setFromICString(this->curline);
     if (strcmp(ic_curline.getName(),"BEGIN") == 0){
       if(strcmp(ic_curline.getValue(),"VEVENT") == 0){
 	a+=1;
@@ -38,50 +41,44 @@ ICObject &GenericICalParser::getNext(void){
 ICalBufferParser::ICalBufferParser(void){}
 bool ICalBufferParser::begin(const char *icsbuf){this->icsbuf = icsbuf; return true;}
 char *ICalBufferParser::readNextLine(void){
-  int linebuf_off;
-  static int buf_off=0; // save buffer offset between each call
+  static int icsbuf_off=0;
+  static int skip=0;
+  int linebuf_off=0;
 
-  /* read everything */
-  linebuf_off=0; // init offset in curline
-  for(/* buf_off hasn't to be reinitialized */; icsbuf[buf_off]!='\0'; buf_off++){
-    // don't copy if you don't have enough room, just discard !
-    if(icsbuf[buf_off]!='\r' /* CR */ && linebuf_off <= sizeof(this->curline)-2){
-      /* we're in a line, so copy */
-      this->curline[linebuf_off++]=this->icsbuf[buf_off];
-    }else{
-      // physical line ended, let's special-case now
-      // now, does logical line ended ?
-      /* states :
-       * (1) on endline
-       * (2) line continues
-       * (3) line finished, analyse and newline
-       * 1 -> 2
-       * 2 -> 1
-       * 1 -> 3
-       */
-      // we're on side. test if (1) or (2). '?' is unknown char
-      if (this->icsbuf[buf_off+2]==' '/* length of '\n' + 'SPC' */){
-	// line continues
-	buf_off+=2; // discard '\n' and ' ' (don't read), continue
-		    // reading
-      }else{ // wasn't a ' '
-	// so we assume that both logical and physical line ended
-	/* 1 finish up */
-	this->curline[linebuf_off] = '\0'; // current is '\r'
-	/* 2 reset and prepare for next line */
-	linebuf_off = 0;
-	/* we had '\r\n?' with '?' continuation or spc, we were at
-	 * '\r', discard '\n' anyway */
-	buf_off+=2; // 1 to discard '\n', another 1 because 3rd for
-		    // loop statement won't be executed after re-entry
-		    // in this function
-	/* return line @ */
+  while(this->icsbuf[icsbuf_off] != '\0'){
+    if(skip >= 0) // skipping
+      skip--;
+    else{ // not skipping
+      // emergency closing, not enough room anymore !
+      if (linebuf_off == sizeof(this->curline)-2){
+	this->curline[linebuf_off] = '\0';
 	return this->curline;
-      }
-    }
-  }
-  /* end of buffer reached, NULL return and reset for rereading */
-  buf_off = 0;
+      } else if(icsbuf_off >= 3){ // negative outbound read
+	if(this->icsbuf[icsbuf_off-2]=='\r' && this->icsbuf[icsbuf_off-1]=='\n'){// CRLF
+	  if(this->icsbuf[icsbuf_off]==' ')// CRLFSPC -> folded line. skip & continue.
+	    // trail is at xCRLFSPCa
+	    skip = 2;
+	  else { //CRLFa a is any char.
+	    skip = 2;
+	    this->curline[linebuf_off]=this->icsbuf[icsbuf_off-3];
+	    this->curline[linebuf_off+1]='\0';
+#ifdef TESTING
+	    std::cout << this->curline << '\n';
+	    // std::cout << icsbuf_off << ':' << linebuf_off << ':' << IC_LEN_LOGICAL-1 << ':' << skip << ':' << curline << '\n';
+#endif
+	    return this->curline;
+	  }
+	}
+	// check if we can copy
+	if (linebuf_off <= sizeof(this->curline)-2){ // 1 for the  array index, 2 for the '\0'
+	  this->curline[linebuf_off] = this->icsbuf[icsbuf_off-3]; // trail
+	  linebuf_off++;
+	}
+      } // negative outbound read end
+    } // skip end
+    icsbuf_off++;
+  } // while end
+  icsbuf_off = 0;
   return NULL;
 }
 
