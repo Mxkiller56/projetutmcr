@@ -1,24 +1,26 @@
 #include <Arduino.h>
 #include <WiFi.h>
-#include <NTPClient.h>
-#include <WiFiUdp.h>
-WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP, "europe.pool.ntp.org", 7200, 60000);
+#include <NTPClientLib.h>
+
+void connexion(); //déclaration de la méthode connexion()
+
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(9600); //définition du débit du port série
   Serial.println("Setup beginned");
+  connexion();
+  NTP.begin ("pool.ntp.org", 1, true, 0); // définition du serveur de temps utilisé, 1 correspond au décalage horaire par rapport au serveur, true pour gérer l'heure d'été et l'heure d'hiber, 0 pour le décalage en minute
+  NTP.setInterval (3600);
+}
+
+void loop() {
+  Serial.println (NTP.getTimeDateString ());
+  delay(1000);
+}
+void connexion(){
   WiFi.begin("","");
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.println("Connecting to WiFi..");
     }
   Serial.println("Conneted !");
-  timeClient.begin();
-  Serial.println(timeClient.getFormattedTime()); //affichage de la date avant la mise a jour de l'heure
-}
-
-void loop() {
-  timeClient.update(); //mise à jour de l'heure
-  Serial.println(timeClient.getFormattedTime());
-  delay(1000);
 }
