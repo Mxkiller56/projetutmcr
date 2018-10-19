@@ -49,30 +49,23 @@ char *ICalBufferParser::readNextLine(void){
     if(skip >= 0) // skipping
       skip--;
     else{ // not skipping
-      // emergency closing, not enough room anymore !
-      if (linebuf_off == sizeof(this->curline)-2){
-	this->curline[linebuf_off] = '\0';
-	return this->curline;
-      } else if(icsbuf_off >= 3){ // negative outbound read
+      if(icsbuf_off >= 3){ // negative outbound read
+	this->curline[linebuf_off] = this->icsbuf[icsbuf_off-3]; // trail
+	if (linebuf_off < sizeof(this->curline)-1) // continue filling if ok.
+	  linebuf_off++;
 	if(this->icsbuf[icsbuf_off-2]=='\r' && this->icsbuf[icsbuf_off-1]=='\n'){// CRLF
 	  if(this->icsbuf[icsbuf_off]==' ')// CRLFSPC -> folded line. skip & continue.
 	    // trail is at xCRLFSPCa
-	    skip = 2;
+	    skip = 3;
 	  else { //CRLFa a is any char.
 	    skip = 2;
-	    this->curline[linebuf_off]=this->icsbuf[icsbuf_off-3];
-	    this->curline[linebuf_off+1]='\0';
+	    this->curline[linebuf_off]='\0';
 #ifdef TESTING
 	    std::cout << this->curline << '\n';
 	    // std::cout << icsbuf_off << ':' << linebuf_off << ':' << IC_LEN_LOGICAL-1 << ':' << skip << ':' << curline << '\n';
 #endif
 	    return this->curline;
 	  }
-	}
-	// check if we can copy
-	if (linebuf_off <= sizeof(this->curline)-2){ // 1 for the  array index, 2 for the '\0'
-	  this->curline[linebuf_off] = this->icsbuf[icsbuf_off-3]; // trail
-	  linebuf_off++;
 	}
       } // negative outbound read end
     } // skip end
