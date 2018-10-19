@@ -62,7 +62,6 @@ char *ICalBufferParser::readNextLine(void){
 	    this->curline[linebuf_off]='\0';
 #ifdef TESTING
 	    std::cout << this->curline << '\n';
-	    // std::cout << icsbuf_off << ':' << linebuf_off << ':' << IC_LEN_LOGICAL-1 << ':' << skip << ':' << curline << '\n';
 #endif
 	    return this->curline;
 	  }
@@ -70,8 +69,21 @@ char *ICalBufferParser::readNextLine(void){
       } // negative outbound read end
     } // skip end
     icsbuf_off++;
-  } // while end
-  icsbuf_off = 0;
+  } // while end. Close last line and return.
+  if (this->icsbuf[icsbuf_off-2]!='\r' && this->icsbuf[icsbuf_off-1]!='\r'
+      && linebuf_off < sizeof(this->curline)-4){ // not a CRLFEOF file end & enough room to finish copy
+    this->curline[linebuf_off++] = this->icsbuf[icsbuf_off-3]; // axxEOF
+    this->curline[linebuf_off++] = this->icsbuf[icsbuf_off-2]; // xaxEOF
+    this->curline[linebuf_off++] = this->icsbuf[icsbuf_off-1]; // xxaEOF
+  }
+  else if (linebuf_off < sizeof(this->curline)-2) // it's a CRLFEOF file end
+    this->curline[linebuf_off++] = this->icsbuf[icsbuf_off-3]; // aCRLFEOF
+  // in any case, close line correctly !
+  this->curline[linebuf_off] = '\0';
+#ifdef TESTING
+	    std::cout << this->curline << '\n';
+#endif
+  icsbuf_off = 0; // "rewind" in buffer to reparse after if needed
   return NULL;
 }
 
