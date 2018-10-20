@@ -8,7 +8,7 @@ void setup() {
   Serial.begin(9600); //définition du débit du port série
   Serial.println("Setup beginned");
   connexion();
-  NTP.begin ("pool.ntp.org", 1, true, 0); // définition du serveur de temps utilisé, 1 correspond au décalage horaire par rapport au serveur, true pour gérer l'heure d'été et l'heure d'hiber, 0 pour le décalage en minute
+  NTP.begin ("pool.ntp.org", 1, true, 0); // définition du serveur de temps utilisé, 1 correspond au décalage horaire par rapport au serveur, true pour gérer l'heure d'été et l'heure d'hiver, 0 pour le décalage en minute
   NTP.setInterval (3600);
 }
 
