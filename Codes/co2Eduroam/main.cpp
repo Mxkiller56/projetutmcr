@@ -6,7 +6,7 @@
 #define EAP_PASSWORD "" //your Eduroam password
 String line; //variable for response
 const char* ssid = "eduroam"; // Eduroam SSID
-const char* host = "arduino.php5.sk"; //external server domain for HTTP connection after authentification
+const char* host = ""; //external server domain for HTTP connection after authentification
 void connexion(){
   delay(10);
   Serial.println();
