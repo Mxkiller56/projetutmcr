@@ -17,8 +17,13 @@
 // this breaks readNextLine(). Investigate.
 // doesn't break if defined to 256
 // strange break on 235
-#define IC_ELMTLEN (20)
-#define IC_LEN_LOGICAL (2*IC_ELMTLEN)
+#define IC_NAMELEN (20)
+#define IC_VALUELEN (150)
+#define IC_LOCATIONLEN (50)
+#define IC_SUMMARYLEN (150)
+// not used
+#define IC_PROPSLEN
+#define IC_LEN_LOGICAL (IC_NAMELEN+IC_VALUELEN)
 
 class ICDate {
  public:
@@ -46,8 +51,8 @@ class ICline {
   void setValue(char *value);
   void setFromICString(char *icstr); // _ic_analyze_contentline
  private:
-  char name[IC_ELMTLEN];
-  char value[IC_ELMTLEN];
+  char name[IC_NAMELEN];
+  char value[IC_VALUELEN];
 };
 
 class ICObject {
@@ -68,8 +73,8 @@ class ICVevent: public ICObject {
  private:
   ICDate dtstart;
   ICDate dtend;
-  char location[IC_ELMTLEN];
-  char summary[IC_ELMTLEN];
+  char location[IC_LOCATIONLEN];
+  char summary[IC_SUMMARYLEN];
 };
 
 /* parsers */

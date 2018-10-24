@@ -27,7 +27,7 @@ ICObject &GenericICalParser::getNext(void){
   int a=0, len;
   
   while (this->readNextLine() != NULL){
-    //    ic_curline.setFromICString(this->curline);
+    ic_curline.setFromICString(this->curline);
     if (strcmp(ic_curline.getName(),"BEGIN") == 0){
       if(strcmp(ic_curline.getValue(),"VEVENT") == 0){
 	a+=1;
@@ -56,7 +56,7 @@ char *ICalBufferParser::readNextLine(void){
 	if(this->icsbuf[icsbuf_off-2]=='\r' && this->icsbuf[icsbuf_off-1]=='\n'){// CRLF
 	  if(this->icsbuf[icsbuf_off]==' ')// CRLFSPC -> folded line. skip & continue.
 	    // trail is at xCRLFSPCa
-	    skip = 3;
+	    skip = 2;
 	  else { //CRLFa a is any char.
 	    skip = 2;
 	    this->curline[linebuf_off]='\0';
@@ -185,14 +185,20 @@ void ICline::setFromICString(char *icstr){
     /* copy correct parts in struct */
     if (skip_char == false){
       if(semicolumn_cnt == 0 && column_cnt == 0){
-	/* still in name part, copy name */
-	this->name[name_off++] = icstr[offset];
+	/* still in name part, copy name and check if not 
+	   writing out-of-bounds */
+	this->name[name_off] = icstr[offset];
+	if(name_off < sizeof(this->name))
+	  name_off++;
       }else if (semicolumn_cnt > 0 && column_cnt == 0){
 	/* param part, undefined behaviour (not implemented) */
       }else if (semicolumn_cnt > 0 || column_cnt > 0){
-	/* parameter is optional, so semicolumn_cnt may be == 0 */
-	/* value part, copy value */
-	this->value[value_off++] = icstr[offset];
+	/* parameter is optional, so semicolumn_cnt may be == 0
+	 * value part, copy value and check if not writing out
+	 * of bounds */
+	this->value[value_off] = icstr[offset];
+	if(value_off < sizeof(this->value))
+	  value_off++;
       }
     }
     ++offset;
