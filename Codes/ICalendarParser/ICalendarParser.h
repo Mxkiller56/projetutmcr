@@ -8,6 +8,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #ifdef TESTING
 #include "Arduino_testing.h"
 #else
@@ -29,6 +30,7 @@ class ICDate {
  public:
   static time_t setFromICString(char *datevalue);
   static int getUtcYear(time_t);
+  static int getUtcYearsSince1900(time_t);
   static int getUtcMonth(time_t);
   static int getUtcDay(time_t);
   static int getUtcHours(time_t);

@@ -2,7 +2,6 @@
    here. I'm not very okay with references, so I may
    change functions to use refs later if needed */
 #include "ICalendarParser.h"
-#include <ctime> // for time manipulation functions
 #define MKTIME mktime
 #ifdef TESTING
 #include <iostream>
@@ -92,18 +91,22 @@ char *ICalStreamParser::readNextLine(void){}
 
 /* **************** ICDate ******************** */
 /* getters. returns are in Universal Coordinated Time */
-int ICDate::getUtcYear(time_t t){return gmtime(&t)->tm_year;}
-int ICDate::getUtcMonth(time_t t){return gmtime(&t)->tm_mon;}
+int ICDate::getUtcYear(time_t t){return 1900+gmtime(&t)->tm_year;} // this one is a bit special, since tm_year is years since 1900
+int ICDate::getUtcYearsSince1900(time_t t){return gmtime(&t)->tm_year;}
+int ICDate::getUtcMonth(time_t t){return gmtime(&t)->tm_mon+1;} // months are numbered starting from 0
 int ICDate::getUtcDay(time_t t){return gmtime(&t)->tm_mday;}
 int ICDate::getUtcHours(time_t t){return gmtime(&t)->tm_hour;}
 int ICDate::getUtcMinutes(time_t t){return gmtime(&t)->tm_min;}
 int ICDate::getUtcSeconds(time_t t){return gmtime(&t)->tm_sec;}
-/** setter from ICalendar-formatted date */
+/** setter from ICalendar-formatted date-time
+    https://icalendar.org/iCalendar-RFC-5545/3-3-5-date-time.html
+    this version only implements UTC time
+ */
 time_t ICDate::setFromICString(char *datevalue){
   struct tm convtm = {};
   time_t convtime;
   char tmp[] = "\0\0\0\0";
-  int i;
+  int i=0;
   struct _parser {
     char *start;
     int cpysize;
@@ -111,14 +114,18 @@ time_t ICDate::setFromICString(char *datevalue){
   };
   struct _parser dv_parser [] = {
     /* start                                    cpysize            storto        */
-    {&datevalue[c_array_len("YYYYMMDDThhmm")-1],sizeof("ss")-1,    &convtm.tm_sec},
-    {&datevalue[c_array_len("YYYYMMDDThh")-1],  sizeof("mm")-1,    &convtm.tm_min},
-    {&datevalue[c_array_len("YYYYMMDDT")-1],    sizeof("hh")-1,    &convtm.tm_hour},
-    {&datevalue[c_array_len("YYYYMM")-1],       sizeof("DD")-1,    &convtm.tm_mday},
-    {&datevalue[c_array_len("YYYY")-1],         sizeof("MM")-1,    &convtm.tm_mon},
-    {&datevalue[0],                             sizeof("YYYY")-1,  &convtm.tm_year}
+    {&datevalue[c_array_len("YYYYMMDDThhmm")-1],sizeof("ss")-1,    &convtm.tm_sec}, // from 0 to 59 (60 for leap second)
+    {&datevalue[c_array_len("YYYYMMDDThh")-1],  sizeof("mm")-1,    &convtm.tm_min}, // from 0 to 59
+    {&datevalue[c_array_len("YYYYMMDDT")-1],    sizeof("hh")-1,    &convtm.tm_hour},// from 0 to 23
+    {&datevalue[c_array_len("YYYYMM")-1],       sizeof("DD")-1,    &convtm.tm_mday},// from 1 to 31
+    {&datevalue[c_array_len("YYYY")-1],         sizeof("MM")-1,    &convtm.tm_mon}, // from 0 to 11
+    {&datevalue[0],                             sizeof("YYYY")-1,  &convtm.tm_year} // years elapsed since 1900
   };
-  /* do some format-validation. not checking for outbounds read, sorry */
+  /* do some format-validation. */
+  while (datevalue[i]!='\0')
+    i++;
+  if (i < sizeof("YYYYMMDDTHHMMSSZ")-1)
+    return 0;  // quit now. too small to be parsed.
   if (datevalue[c_array_len("YYYYMMDD")-1] == 'T'
       && datevalue[c_array_len("YYYYMMDDThhmmss")-1] == 'Z'){
     for (i=0; i<=c_array_len(dv_parser)-1; i++){
@@ -127,7 +134,10 @@ time_t ICDate::setFromICString(char *datevalue){
       *(dv_parser[i].storto) = atoi(tmp);
     }
   }
-  convtime = MKTIME(&convtm);
+  /* now some adjustments */
+  convtm.tm_mon -= 1; // correct month numbering
+  convtm.tm_year -= 1900; // year is elapsed years since 1900
+  convtime = MKTIME(&convtm); // convert it in time_t format
   if (convtime != -1) // input was correct
     return convtime;
   else // return default value (epoch start)
