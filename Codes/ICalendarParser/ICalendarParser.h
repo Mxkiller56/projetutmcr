@@ -27,19 +27,13 @@
 
 class ICDate {
  public:
-  ICDate();
-  void set(int year=1970, int month=01, int day=01, int hours=0,
-      int minutes=0, int seconds=0);
-  void setFromICString(char *datevalue);
-  unsigned int getYear(void);
-  unsigned int getMonth(void);
-  unsigned int getDay(void);
-  unsigned int getHours(void);
-  unsigned int getMinutes(void);
-  unsigned int getSeconds(void);
- private:
-  unsigned int year, month, day, hours, minutes, seconds;
-  void check(void);
+  static time_t setFromICString(char *datevalue);
+  static int getUtcYear(time_t);
+  static int getUtcMonth(time_t);
+  static int getUtcDay(time_t);
+  static int getUtcHours(time_t);
+  static int getUtcMinutes(time_t);
+  static int getUtcSeconds(time_t);
 };
 
 class ICline {
@@ -62,17 +56,17 @@ class ICObject {
 class ICVevent: public ICObject {
  public:
   ICVevent();
-  ICDate getDtstart(void);
-  ICDate getDtend(void);
-  void setDtstart(ICDate);
-  void setDtend(ICDate);
+  time_t getDtstart(void);
+  time_t getDtend(void);
+  void setDtstart(time_t);
+  void setDtend(time_t);
   void setSummary(const char *summary);
   char *getSummary(void);
   void setLocation(const char *location);
   char *getLocation(void);
  private:
-  ICDate dtstart;
-  ICDate dtend;
+  time_t dtstart;
+  time_t dtend;
   char location[IC_LOCATIONLEN];
   char summary[IC_SUMMARYLEN];
 };

@@ -1,4 +1,5 @@
 #include "ICalendarParser.cpp"
+#include <ctime>
 #include <string>
 #include <fstream>
 #include <iostream>
@@ -12,15 +13,17 @@ char *_file2mem (char *filename);
 int main (void){
   /* test ICDate functionnality */
   // 1. Test icdate
+  time_t testdate_time;
+  struct tm *testdate_tm;
   char testdate[] = "20180927T120512Z";
-  ICDate icdate = ICDate();
-  icdate.setFromICString(testdate);
-  if(icdate.getYear()    == 2018 &&
-     icdate.getMonth()   == 9    &&
-     icdate.getDay()     == 27   &&
-     icdate.getHours()   == 12   &&
-     icdate.getMinutes() == 5    &&
-     icdate.getSeconds() == 12)
+  testdate_time = ICDate::setFromICString(testdate);
+  testdate_tm = gmtime(&testdate_time);
+  if(testdate_tm->tm_year == 2018 &&
+     testdate_tm->tm_mon  == 9    &&
+     testdate_tm->tm_mday == 27   &&
+     testdate_tm->tm_hour == 12   &&
+     testdate_tm->tm_min  == 5    &&
+     testdate_tm->tm_sec  == 12)
     std::cout << "ICDate setFromICString test  passed\n";
   else
     std::cerr << "ICDate setFromICString test  FAILED\n";
@@ -45,18 +48,20 @@ int main (void){
   ICVevent vevent = ICVevent();
   char testlocation[] = "TD9";
   char testsummary[] = "Maths-Physique-Electromag TD";
-  icdate.set(2018,10,13);
-  vevent.setDtstart(icdate);
-  icdate.set(icdate.getYear()+1,10,13);
-  vevent.setDtend(icdate);
+  struct tm testbeg = {0,0,16,26,10,2018,0,0,0};
+  struct tm testend = {0,0,18,26,10,2019,0,0,0};
+  time_t testbeg_t = timegm(&testbeg);
+  time_t testend_t = timegm(&testend);
+  vevent.setDtstart(testbeg_t);
+  vevent.setDtend(testend_t);
   vevent.setLocation(testlocation);
   vevent.setSummary(testsummary);
-  if (vevent.getDtstart().getYear()  == 2018 &&
-      vevent.getDtstart().getMonth() == 10 &&
-      vevent.getDtstart().getDay()   == 13 &&
-      vevent.getDtend().getYear()    == 2019 &&
-      vevent.getDtend().getMonth()   == 10 &&
-      vevent.getDtend().getDay()     == 13 &&
+  if (ICDate::getUtcYear(vevent.getDtstart())  == 2018 &&
+      ICDate::getUtcMonth(vevent.getDtstart()) == 10 &&
+      ICDate::getUtcDay(vevent.getDtstart())   == 26 &&
+      ICDate::getUtcYear(vevent.getDtend())    == 2019 &&
+      ICDate::getUtcMonth(vevent.getDtend())   == 10 &&
+      ICDate::getUtcDay(vevent.getDtend())     == 26 &&
       strcmp(vevent.getLocation(),testlocation) == 0 &&
       strcmp(vevent.getSummary(),testsummary) == 0)
     std::cout << "ICVevent test  passed\n";

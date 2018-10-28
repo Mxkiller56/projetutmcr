@@ -2,18 +2,22 @@
    here. I'm not very okay with references, so I may
    change functions to use refs later if needed */
 #include "ICalendarParser.h"
+#include <ctime> // for time manipulation functions
+#define MKTIME mktime
 #ifdef TESTING
 #include <iostream>
+#undef MKTIME
+#define MKTIME timegm
 #endif
 
 #define c_array_len(array) sizeof(array)/sizeof(array[0])
 
 /* **************** ICVevent ****************** */
 ICVevent::ICVevent(void){}
-ICDate ICVevent::getDtstart(void) {return this->dtstart;}
-ICDate ICVevent::getDtend(void) {return this->dtend;}
-void ICVevent::setDtstart(ICDate start){this->dtstart = start;}
-void ICVevent::setDtend(ICDate end){this->dtend = end;}
+time_t ICVevent::getDtstart(void) {return this->dtstart;}
+time_t ICVevent::getDtend(void) {return this->dtend;}
+void ICVevent::setDtstart(time_t start){this->dtstart = start;}
+void ICVevent::setDtend(time_t end){this->dtend = end;}
 void ICVevent::setSummary(const char *summary){strncpy(this->summary,summary,sizeof(this->summary)-1);}
 void ICVevent::setLocation(const char *location){strncpy(this->location,location,sizeof(this->summary)-1);}
 char *ICVevent::getSummary(void){return this->summary;}
@@ -60,9 +64,6 @@ char *ICalBufferParser::readNextLine(void){
 	  else { //CRLFa a is any char.
 	    skip = 2;
 	    this->curline[linebuf_off]='\0';
-#ifdef TESTING
-	    std::cout << this->curline << '\n';
-#endif
 	    return this->curline;
 	  }
 	}
@@ -80,9 +81,6 @@ char *ICalBufferParser::readNextLine(void){
     this->curline[linebuf_off++] = this->icsbuf[icsbuf_off-3]; // aCRLFEOF
   // in any case, close line correctly !
   this->curline[linebuf_off] = '\0';
-#ifdef TESTING
-	    std::cout << this->curline << '\n';
-#endif
   icsbuf_off = 0; // "rewind" in buffer to reparse after if needed
   return NULL;
 }
@@ -93,45 +91,32 @@ bool ICalStreamParser::begin(WifiClient *client){return true;}
 char *ICalStreamParser::readNextLine(void){}
 
 /* **************** ICDate ******************** */
-ICDate::ICDate(void){}
-/** "manual" setter */
-void ICDate::set(int year, int month, int day, int hours, int minutes, int seconds){
-  // just copying 1st
-  this->year = year; this->month = month; this->day = day; this->hours = hours; this->minutes = minutes; this->seconds = seconds;
-  (this->check)(); // then check
-}
-/** checks and corrects state if needed */
-void ICDate::check(void){
-  // no need to check anything for year
-  if (this->month > 12){this->month = this->month%12;}
-  if (this->day > 31){this->day = this->day%31;} // basic
-  if (this->hours > 24){this->hours = this->hours%24;}
-  if (this->minutes > 60){this->minutes = this->minutes%60;}
-  if (this->seconds > 60){this->seconds = this->seconds%60;}
-}
-/* getters */
-unsigned int ICDate::getYear(void){return this->year;}
-unsigned int ICDate::getMonth(void){return this->month;}
-unsigned int ICDate::getDay(void){return this->day;}
-unsigned int ICDate::getHours(void){return this->hours;}
-unsigned int ICDate::getMinutes(void){return this->minutes;}
-unsigned int ICDate::getSeconds(void){return this->seconds;}
+/* getters. returns are in Universal Coordinated Time */
+int ICDate::getUtcYear(time_t t){return gmtime(&t)->tm_year;}
+int ICDate::getUtcMonth(time_t t){return gmtime(&t)->tm_mon;}
+int ICDate::getUtcDay(time_t t){return gmtime(&t)->tm_mday;}
+int ICDate::getUtcHours(time_t t){return gmtime(&t)->tm_hour;}
+int ICDate::getUtcMinutes(time_t t){return gmtime(&t)->tm_min;}
+int ICDate::getUtcSeconds(time_t t){return gmtime(&t)->tm_sec;}
 /** setter from ICalendar-formatted date */
-void ICDate::setFromICString(char *datevalue){
+time_t ICDate::setFromICString(char *datevalue){
+  struct tm convtm = {};
+  time_t convtime;
   char tmp[] = "\0\0\0\0";
   int i;
   struct _parser {
     char *start;
     int cpysize;
-    unsigned int *storto;
+    int *storto;
   };
   struct _parser dv_parser [] = {
-    {&datevalue[c_array_len("YYYYMMDDThhmm")-1],sizeof("ss")-1,  &this->seconds},
-    {&datevalue[c_array_len("YYYYMMDDThh")-1],  sizeof("mm")-1,  &this->minutes},
-    {&datevalue[c_array_len("YYYYMMDDT")-1],    sizeof("hh")-1,  &this->hours},
-    {&datevalue[c_array_len("YYYYMM")-1],       sizeof("DD")-1,  &this->day},
-    {&datevalue[c_array_len("YYYY")-1],         sizeof("MM")-1,  &this->month},
-    {&datevalue[0],                           sizeof("YYYY")-1,&this->year}
+    /* start                                    cpysize            storto        */
+    {&datevalue[c_array_len("YYYYMMDDThhmm")-1],sizeof("ss")-1,    &convtm.tm_sec},
+    {&datevalue[c_array_len("YYYYMMDDThh")-1],  sizeof("mm")-1,    &convtm.tm_min},
+    {&datevalue[c_array_len("YYYYMMDDT")-1],    sizeof("hh")-1,    &convtm.tm_hour},
+    {&datevalue[c_array_len("YYYYMM")-1],       sizeof("DD")-1,    &convtm.tm_mday},
+    {&datevalue[c_array_len("YYYY")-1],         sizeof("MM")-1,    &convtm.tm_mon},
+    {&datevalue[0],                             sizeof("YYYY")-1,  &convtm.tm_year}
   };
   /* do some format-validation. not checking for outbounds read, sorry */
   if (datevalue[c_array_len("YYYYMMDD")-1] == 'T'
@@ -142,7 +127,11 @@ void ICDate::setFromICString(char *datevalue){
       *(dv_parser[i].storto) = atoi(tmp);
     }
   }
-  (this->check)();
+  convtime = MKTIME(&convtm);
+  if (convtime != -1) // input was correct
+    return convtime;
+  else // return default value (epoch start)
+    return 0;
 }
 
 /* ******************** ICline *************** */
