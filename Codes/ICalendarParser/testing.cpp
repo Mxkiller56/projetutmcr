@@ -1,5 +1,5 @@
 #include "ICalendarParser.cpp"
-#include <ctime>
+#include <time.h>
 #include <string>
 #include <fstream>
 #include <iostream>
@@ -14,16 +14,20 @@ int main (void){
   /* test ICDate functionnality */
   // 1. Test icdate
   time_t testdate_time;
+  time_t testdate_time2;
   struct tm *testdate_tm;
   char testdate[] = "20180927T120512Z";
+  char testdate2short[] = "20180927T120512";
   testdate_time = ICDate::setFromICString(testdate);
+  testdate_time2 = ICDate::setFromICString(testdate2short);
   testdate_tm = gmtime(&testdate_time);
-  if(testdate_tm->tm_year == 2018 &&
-     testdate_tm->tm_mon  == 9    &&
+  if(testdate_tm->tm_year == 2018 - 1900 &&
+     testdate_tm->tm_mon  == 9 - 1 &&
      testdate_tm->tm_mday == 27   &&
      testdate_tm->tm_hour == 12   &&
      testdate_tm->tm_min  == 5    &&
-     testdate_tm->tm_sec  == 12)
+     testdate_tm->tm_sec  == 12   &&
+     testdate_time2 == 0)
     std::cout << "ICDate setFromICString test  passed\n";
   else
     std::cerr << "ICDate setFromICString test  FAILED\n";
@@ -48,8 +52,8 @@ int main (void){
   ICVevent vevent = ICVevent();
   char testlocation[] = "TD9";
   char testsummary[] = "Maths-Physique-Electromag TD";
-  struct tm testbeg = {0,0,16,26,10,2018,0,0,0};
-  struct tm testend = {0,0,18,26,10,2019,0,0,0};
+  struct tm testbeg = {0,0,16,26,10 - 1,2018 - 1900,0,0,0};
+  struct tm testend = {0,0,18,26,10 - 1,2019 - 1900,0,0,0};
   time_t testbeg_t = timegm(&testbeg);
   time_t testend_t = timegm(&testend);
   vevent.setDtstart(testbeg_t);
