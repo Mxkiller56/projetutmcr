@@ -20,7 +20,7 @@
 // strange break on 235
 #define IC_NAMELEN (20)
 #define IC_VALUELEN (150)
-#define IC_LOCATIONLEN (50)
+#define IC_LOCATIONLEN (54)
 #define IC_SUMMARYLEN (150)
 // not used
 #define IC_PROPSLEN
@@ -77,10 +77,10 @@ class ICVevent: public ICObject {
 class GenericICalParser {
  public:
   GenericICalParser(); // empty constructor
-  ICObject &getNext(); // common, uses readNextLine, curline and ICline object.setFromICString(curline) on stack. get_ic_events in proto.c
+  ICVevent *getNext(); // common, uses readNextLine, curline and ICline object.setFromICString(curline) on stack. get_ic_events in proto.c
  protected:
+  ICVevent curr_vevent;
   virtual char *readNextLine();
-  ICObject curr_ic_object;
   char curline [IC_LEN_LOGICAL]; // common, used to store current "logical" line in both readNextLine methods
 };
 

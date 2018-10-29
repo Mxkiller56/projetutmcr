@@ -74,9 +74,18 @@ int main (void){
   // 4. Test ICalendarParser
   ICalBufferParser icparser = ICalBufferParser();
   char *icsbuf = _file2mem(ICS_FILE);
-  ICObject icobj;
   icparser.begin(icsbuf);
-  icobj = icparser.getNext();
+  ICVevent *icobj;
+  time_t tmptime;
+  std::cout << "Now parsing " << ICS_FILE << " ...\n";
+  while((icobj = icparser.getNext())!=NULL){
+    std::cout << "summary:" << icobj->getSummary() << "\n";
+    std::cout << "location:" << icobj->getLocation() << "\n";
+    tmptime = icobj->getDtstart();
+    std::cout << "dtstart:" << asctime(localtime(&tmptime));
+    tmptime = icobj->getDtend();
+    std::cout << "dtend:" << asctime(localtime(&tmptime)) << "\n";
+  }
 }
 
 /* returns a buffer with file contents (dégoulasse) */

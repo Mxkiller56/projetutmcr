@@ -18,26 +18,39 @@ time_t ICVevent::getDtend(void) {return this->dtend;}
 void ICVevent::setDtstart(time_t start){this->dtstart = start;}
 void ICVevent::setDtend(time_t end){this->dtend = end;}
 void ICVevent::setSummary(const char *summary){strncpy(this->summary,summary,sizeof(this->summary)-1);}
-void ICVevent::setLocation(const char *location){strncpy(this->location,location,sizeof(this->summary)-1);}
+void ICVevent::setLocation(const char *location){strncpy(this->location,location,sizeof(this->location)-1);}
 char *ICVevent::getSummary(void){return this->summary;}
 char *ICVevent::getLocation(void){return this->location;}
 
 /* **************** GenericICalParser ************ */
 GenericICalParser::GenericICalParser(void){}
 char *GenericICalParser::readNextLine(void){/* does nothing */}
-ICObject &GenericICalParser::getNext(void){
+/* can only return vevents for now */
+ICVevent *GenericICalParser::getNext(void){
   ICline ic_curline;
-  int a=0, len;
-  
+
+  memset(&this->curr_vevent,'\0',sizeof(this->curr_vevent));
   while (this->readNextLine() != NULL){
     ic_curline.setFromICString(this->curline);
-    if (strcmp(ic_curline.getName(),"BEGIN") == 0){
-      if(strcmp(ic_curline.getValue(),"VEVENT") == 0){
-	a+=1;
+    if (strcmp(ic_curline.getName(),"BEGIN") == 0 &&
+	strcmp(ic_curline.getValue(),"VEVENT") == 0){
+      while(this->readNextLine() != NULL){
+	ic_curline.setFromICString(this->curline);
+	if(strcmp(ic_curline.getName(),"END") == 0 &&
+	   strcmp(ic_curline.getValue(),"VEVENT") == 0)
+	  return &this->curr_vevent;
+	else if (strcmp(ic_curline.getName(),"DTSTART") == 0)
+	  this->curr_vevent.setDtstart(ICDate::setFromICString(ic_curline.getValue()));
+	else if (strcmp(ic_curline.getName(),"DTEND") == 0)
+	  this->curr_vevent.setDtend(ICDate::setFromICString(ic_curline.getValue()));
+	else if (strcmp(ic_curline.getName(),"SUMMARY") == 0)
+	  this->curr_vevent.setSummary(ic_curline.getValue());
+	else if (strcmp(ic_curline.getName(),"LOCATION") == 0)
+	  this->curr_vevent.setLocation(ic_curline.getValue());
       }
-    }
-  }
-  return this->curr_ic_object;
+    } // end vevent while
+  } // end buf while
+  return NULL;
 }
 
 /* **************** ICalBufferParser *********** */
