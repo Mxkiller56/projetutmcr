@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#define _IC_LEN_LOGICAL 1024
+#define _IC_LEN_LOGICAL (200)
 #define _IC_LEN_ELT _IC_LEN_LOGICAL/2 // approx
 #define _IC_LEN_NAME 20
 #define ICS_FILE "example.ics"
@@ -206,7 +206,7 @@ char *_get_next_line(char *icsbuf){
   /* read everything */
   linebuf_off=0; // init offset in curline
   for(/* buf_off hasn't to be reinitialized */; icsbuf[buf_off]!='\0'; buf_off++){
-    if(icsbuf[buf_off]!='\r' /* CR */){
+    if(icsbuf[buf_off]!='\r' /* CR */ && linebuf_off <= sizeof(curline)-2){
       /* we're in a line, so copy */
       curline[linebuf_off++]=icsbuf[buf_off];
     }else{
@@ -267,7 +267,7 @@ char *_file2mem (char *filename){
       memset(buffer, '\0', sizeof(buffer));
       offset+=sizeof(buffer);
       if((icsbuf = realloc(icsbuf,offset+sizeof(buffer))) == NULL){/* alloc error happened */
-      printf("an error as occured while allocating memory");
+      printf("an error has occured while allocating memory");
       return NULL;
     }
     }
