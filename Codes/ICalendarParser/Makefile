@@ -1,7 +1,19 @@
-all: test
+NAME = test
+OBJS = ICalendarParser.o util.o Arduino_testing.o testing.o
+CC   = g++
+CPPFLAGS = -DTESTING
+CFLAGS = -fpermissive -g
 
-test: ICalendarParser.h ICalendarParser.cpp testing.cpp
-	g++ -g -fpermissive -DTESTING testing.cpp -o test
-proto: proto.c
-	gcc -g proto.c -o test
-	gdb ./test
+# -c : compile and assemble only (no linking)
+.cpp.o:
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<
+.c.o:
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<
+
+all: $(NAME)
+
+$(NAME): $(OBJS)
+	$(CC) $(OBJS) -o $(NAME)
+clean:
+	rm *.o
+	rm $(TEST)
