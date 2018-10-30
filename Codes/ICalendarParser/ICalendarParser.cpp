@@ -99,7 +99,7 @@ char *ICalBufferParser::readNextLine(void){
 
 /* **************** ICalStreamParser ********** */
 ICalStreamParser::ICalStreamParser(void){}
-bool ICalStreamParser::begin(WifiClient *client){return true;}
+bool ICalStreamParser::begin(WiFiClient *client){return true;}
 char *ICalStreamParser::readNextLine(void){}
 
 /* **************** ICDate ******************** */

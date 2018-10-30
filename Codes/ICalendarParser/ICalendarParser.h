@@ -104,11 +104,11 @@ class ICalBufferParser: public GenericICalParser {
 class ICalStreamParser: public GenericICalParser {
  public:
   ICalStreamParser(); // empty constructor
-  bool begin(WifiClient *client);
+  bool begin(WiFiClient *client);
  private:
-  WifiClient *client;
+  WiFiClient *client;
   // specific ICalStreamParser version
-  virtual char *readNextLine(); // _get_next_line using WifiClient stream
+  virtual char *readNextLine(); // _get_next_line using WiFiClient stream
 };
 
 
