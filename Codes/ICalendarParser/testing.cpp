@@ -5,7 +5,6 @@
 #include <fstream>
 #include <iostream>
 #include <string.h>
-#include <unistd.h>
 #include <stdlib.h>
 char ICS_FILE[] = "example.ics";
 
