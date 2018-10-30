@@ -1,11 +1,9 @@
-#include "ICalendarParser.cpp"
-#include "util.c"
+#include "ICalendarParser.h"
+#include "util.h"
 #include <time.h>
 #include <string>
 #include <fstream>
 #include <iostream>
-#include <string.h>
-#include <stdlib.h>
 char ICS_FILE[] = "example.ics";
 
 int main (void){
