@@ -1,5 +1,7 @@
 #include "ICalendarParser.h"
+#include "Arduino_testing.h"
 #include "util.h"
+#include <stdint.h>
 #include <time.h>
 #include <string>
 #include <fstream>
@@ -67,7 +69,27 @@ int main (void){
     std::cout << "ICVevent test  passed\n";
   else
     std::cout << "ICVevent test  FAILED\n";
-  // 4. Test ICalendarParser
+  #ifdef WFCLIENTDMO
+  // Client/WiFiClient demo run
+  WiFi::begin("SSID");
+  HTTPClient http;
+  WiFiClient *stream = http.getStreamPtr();
+  ICalClientParser icc_parser;
+  ICVevent *icvev;
+  time_t tmptime2;
+  icc_parser.begin(stream);
+  std::cout << "Now simulating network interaction ...\n";
+  while((icvev = icc_parser.getNext())!=NULL){
+    std::cout << "summary:" << icvev->getSummary() << "\n";
+    std::cout << "location:" << icvev->getLocation() << "\n";
+    tmptime2 = icvev->getDtstart();
+    std::cout << "dtstart:" << asctime(localtime(&tmptime2));
+    tmptime2 = icvev->getDtend();
+    std::cout << "dtend:" << asctime(localtime(&tmptime2)) << "\n";
+  }
+  #endif
+  #ifdef ICALBUFPARSDMO
+  // ICalBufferParser demo run
   ICalBufferParser icparser = ICalBufferParser();
   char *icsbuf = _file2mem(ICS_FILE);
   icparser.begin(icsbuf);
@@ -82,4 +104,6 @@ int main (void){
     tmptime = icobj->getDtend();
     std::cout << "dtend:" << asctime(localtime(&tmptime)) << "\n";
   }
+  free(icsbuf);
+  #endif
 }

@@ -97,10 +97,46 @@ char *ICalBufferParser::readNextLine(void){
   return NULL;
 }
 
-/* **************** ICalStreamParser ********** */
-ICalStreamParser::ICalStreamParser(void){}
-bool ICalStreamParser::begin(WiFiClient *client){return true;}
-char *ICalStreamParser::readNextLine(void){}
+/* **************** ICalClientParser ********** */
+ICalClientParser::ICalClientParser(void){}
+bool ICalClientParser::begin(Client *client){
+  this->client = client;
+  return true;
+}
+char *ICalClientParser::readNextLine(void){
+  static int skip=0, data_off = 0;
+  int linebuf_off = 0;
+  int i;
+  
+  while(this->client->available()){ // there is still data to read
+    /* cache4 moving */
+    for (i=sizeof(this->cache4)-1; i > 0; i--)
+      this->cache4[i] = this->cache4[i-1];
+    this->cache4[0] = this->client->read(); // 3 is trail 0 is head
+    data_off++;
+
+    if(skip > 0) // skipping. Oops, border effect
+      skip--;
+    else{ // not skipping
+      if(data_off > 3){
+	this->curline[linebuf_off] = this->cache4[3]; // copy trail
+	if (linebuf_off < sizeof(this->curline)-1) // continue filling if ok
+	  linebuf_off++;
+	if(this->cache4[2]=='\r' && this->cache4[1]=='\n'){// CRLF
+	  if(this->cache4[0]==' ')// CRLFSPC -> folded line. skip & continue.
+	    // trail is at xCRLFSPCa
+	    skip = 3;
+	  else { //CRLFa a is any char.
+	    skip = 2;
+	    this->curline[linebuf_off]='\0';
+	    return this->curline;
+	  }
+	}
+      } // negative outbound read end
+    } // skip end
+  } // while end (no more data available)
+  return NULL;
+}
 
 /* **************** ICDate ******************** */
 /* getters. returns are in Universal Coordinated Time */
