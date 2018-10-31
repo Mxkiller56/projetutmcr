@@ -13,6 +13,7 @@
 #include "Arduino_testing.h"
 #else
 #include "Arduino.h"
+#include "Client.h"
 #endif
 
 // this breaks readNextLine(). Investigate.
@@ -99,16 +100,18 @@ class ICalBufferParser: public GenericICalParser {
 /* 2nd case: less large on memory, you have a connection
  * to an ICal resource and you pass it to the parser,
  * which uses it to read data from chunk to chunk.
+ * Note that Client must have already been initialized.
  * Incoming data is discarded when no longer needed in
- * order to free memory */
-class ICalStreamParser: public GenericICalParser {
+ * order to free memory. */
+class ICalClientParser: public GenericICalParser {
  public:
-  ICalStreamParser(); // empty constructor
-  bool begin(WifiClient *client);
+  ICalClientParser(); // empty constructor
+  bool begin(Client *client);
  private:
-  WifiClient *client;
-  // specific ICalStreamParser version
-  virtual char *readNextLine(); // _get_next_line using WifiClient stream
+  Client *client;
+  char cache4[4] = {0};
+  // specific ICalClientParser version
+  virtual char *readNextLine(); // _get_next_line using Client stream
 };
 
 
