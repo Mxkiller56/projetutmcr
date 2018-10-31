@@ -11,17 +11,29 @@
 
 class WiFi {
  public:
+  ~WiFi(void);
   static bool disconnect(bool);
   static void mode(int);
   static bool begin(char *);
   static void setHostname(char *);
 };
 
-class WiFiClient {
+class Stream {
+ public:
+  virtual size_t available() = 0;
+  size_t readBytes(uint8_t *buf, size_t toread); /** @param buf buffer to fill with data
+						  @param toread size of data to get */
+  int read(void);
+};
+/* note: Client is also a Stream */
+class Client: public Stream {
  public:
   size_t available(void); // data size available
-  int readBytes(uint8_t *buf, size_t toread); /** @param buf buffer to fill with data
-						  @param toread size of data to get */
+  virtual uint8_t connected() = 0;
+};
+
+class WiFiClient: public Client {
+  uint8_t connected(void);
 };
 
 class HTTPClient {
