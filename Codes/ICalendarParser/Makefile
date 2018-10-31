@@ -2,6 +2,9 @@ NAME = test
 OBJS = ICalendarParser.o util.o Arduino_testing.o testing.o
 CC   = g++
 CPPFLAGS = -DTESTING
+# if you don't want to run demos, comment this out
+#CPPFLAGS +=  -DICALBUFPARSDMO
+CPPFLAGS += -DWFCLIENTDMO
 CFLAGS = -fpermissive -g
 
 # -c : compile and assemble only (no linking)
@@ -16,4 +19,4 @@ $(NAME): $(OBJS)
 	$(CC) $(OBJS) -o $(NAME)
 clean:
 	rm *.o
-	rm $(TEST)
+	rm $(NAME)
