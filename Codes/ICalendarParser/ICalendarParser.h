@@ -44,6 +44,8 @@ class ICline {
   ICline();
   char *getName();
   char *getValue();
+  bool nameIs(char *);
+  bool valueIs(char *);
   void setName(char *name);
   void setValue(char *value);
   void setFromICString(char *icstr); // _ic_analyze_contentline
