@@ -17,8 +17,14 @@ time_t ICVevent::getDtstart(void) {return this->dtstart;}
 time_t ICVevent::getDtend(void) {return this->dtend;}
 void ICVevent::setDtstart(time_t start){this->dtstart = start;}
 void ICVevent::setDtend(time_t end){this->dtend = end;}
-void ICVevent::setSummary(const char *summary){strncpy(this->summary,summary,sizeof(this->summary)-1);}
-void ICVevent::setLocation(const char *location){strncpy(this->location,location,sizeof(this->location)-1);}
+void ICVevent::setSummary(const char *summary){
+  strncpy(this->summary,summary,sizeof(this->summary));
+  this->location[c_array_len(this->location)-1] = '\0';
+}
+void ICVevent::setLocation(const char *location){
+  strncpy(this->location,location,sizeof(this->location)); //copy sizeof bytes
+  this->location[c_array_len(this->location)-1] = '\0'; //terminate
+}
 char *ICVevent::getSummary(void){return this->summary;}
 char *ICVevent::getLocation(void){return this->location;}
 
@@ -27,25 +33,29 @@ GenericICalParser::GenericICalParser(void){}
 char *GenericICalParser::readNextLine(void){/* does nothing */}
 /* can only return vevents for now */
 ICVevent *GenericICalParser::getNext(void){
-  ICline ic_curline;
+  char ic_begin[] = "BEGIN";
+  char ic_end[] = "END";
+  char ic_vevent[] = "VEVENT";
+  char ic_dtstart[] = "DTSTART";
+  char ic_dtend[] = "DTEND";
+  char ic_summary[] = "SUMMARY";
+  char ic_location[] = "LOCATION";
+  ICline ic_curline = ICline(); // structured representation of this->curline
 
-  memset(&this->curr_vevent,'\0',sizeof(this->curr_vevent));
   while (this->readNextLine() != NULL){
-    ic_curline.setFromICString(this->curline);
-    if (strcmp(ic_curline.getName(),"BEGIN") == 0 &&
-	strcmp(ic_curline.getValue(),"VEVENT") == 0){
+    ic_curline.setFromICString(this->curline); // convert into structured
+    if (ic_curline.nameIs(ic_begin) && ic_curline.valueIs(ic_vevent)){
       while(this->readNextLine() != NULL){
 	ic_curline.setFromICString(this->curline);
-	if(strcmp(ic_curline.getName(),"END") == 0 &&
-	   strcmp(ic_curline.getValue(),"VEVENT") == 0)
+	if(ic_curline.nameIs(ic_end) && ic_curline.valueIs(ic_vevent))
 	  return &this->curr_vevent;
-	else if (strcmp(ic_curline.getName(),"DTSTART") == 0)
+	else if (ic_curline.nameIs(ic_dtstart))
 	  this->curr_vevent.setDtstart(ICDate::setFromICString(ic_curline.getValue()));
-	else if (strcmp(ic_curline.getName(),"DTEND") == 0)
+	else if (ic_curline.nameIs(ic_dtend))
 	  this->curr_vevent.setDtend(ICDate::setFromICString(ic_curline.getValue()));
-	else if (strcmp(ic_curline.getName(),"SUMMARY") == 0)
+	else if (ic_curline.nameIs(ic_summary))
 	  this->curr_vevent.setSummary(ic_curline.getValue());
-	else if (strcmp(ic_curline.getName(),"LOCATION") == 0)
+	else if (ic_curline.nameIs(ic_location))
 	  this->curr_vevent.setLocation(ic_curline.getValue());
       }
     } // end vevent while
@@ -67,7 +77,7 @@ char *ICalBufferParser::readNextLine(void){
     else{ // not skipping
       if(icsbuf_off >= 3){ // negative outbound read
 	this->curline[linebuf_off] = this->icsbuf[icsbuf_off-3]; // trail
-	if (linebuf_off < sizeof(this->curline)-1) // continue filling if ok.
+	if (linebuf_off < c_array_len(this->curline)-1) // continue filling if ok.
 	  linebuf_off++;
 	if(this->icsbuf[icsbuf_off-2]=='\r' && this->icsbuf[icsbuf_off-1]=='\n'){// CRLF
 	  if(this->icsbuf[icsbuf_off]==' ')// CRLFSPC -> folded line. skip & continue.
@@ -84,12 +94,12 @@ char *ICalBufferParser::readNextLine(void){
     icsbuf_off++;
   } // while end. Close last line and return.
   if (this->icsbuf[icsbuf_off-2]!='\r' && this->icsbuf[icsbuf_off-1]!='\r'
-      && linebuf_off < sizeof(this->curline)-4){ // not a CRLFEOF file end & enough room to finish copy
+      && linebuf_off < c_array_len(this->curline)-4){ // not a CRLFEOF file end & enough room to finish copy
     this->curline[linebuf_off++] = this->icsbuf[icsbuf_off-3]; // axxEOF
     this->curline[linebuf_off++] = this->icsbuf[icsbuf_off-2]; // xaxEOF
     this->curline[linebuf_off++] = this->icsbuf[icsbuf_off-1]; // xxaEOF
   }
-  else if (linebuf_off < sizeof(this->curline)-2) // it's a CRLFEOF file end
+  else if (linebuf_off < c_array_len(this->curline)-2) // it's a CRLFEOF file end
     this->curline[linebuf_off++] = this->icsbuf[icsbuf_off-3]; // aCRLFEOF
   // in any case, close line correctly !
   this->curline[linebuf_off] = '\0';
@@ -110,7 +120,7 @@ char *ICalClientParser::readNextLine(void){
   
   while(this->client->available()){ // there is still data to read
     /* cache4 moving */
-    for (i=sizeof(this->cache4)-1; i > 0; i--)
+    for (i=c_array_len(this->cache4)-1; i > 0; i--)
       this->cache4[i] = this->cache4[i-1];
     this->cache4[0] = this->client->read(); // 3 is trail 0 is head
     data_off++;
@@ -120,7 +130,7 @@ char *ICalClientParser::readNextLine(void){
     else{ // not skipping
       if(data_off > 3){
 	this->curline[linebuf_off] = this->cache4[3]; // copy trail
-	if (linebuf_off < sizeof(this->curline)-1) // continue filling if ok
+	if (linebuf_off < c_array_len(this->curline)-1) // continue filling if ok
 	  linebuf_off++;
 	if(this->cache4[2]=='\r' && this->cache4[1]=='\n'){// CRLF
 	  if(this->cache4[0]==' ')// CRLFSPC -> folded line. skip & continue.
@@ -161,6 +171,7 @@ time_t ICDate::setFromICString(char *datevalue){
     int cpysize;
     int *storto;
   };
+  // cpysize is -1 because sizeof counts '\0' because it's a "string"
   struct _parser dv_parser [] = {
     /* start                                    cpysize            storto        */
     {&datevalue[c_array_len("YYYYMMDDThhmm")-1],sizeof("ss")-1,    &convtm.tm_sec}, // from 0 to 59 (60 for leap second)
@@ -173,7 +184,7 @@ time_t ICDate::setFromICString(char *datevalue){
   /* do some format-validation. */
   while (datevalue[i]!='\0')
     i++;
-  if (i < sizeof("YYYYMMDDTHHMMSSZ")-1)
+  if (i < c_array_len("YYYYMMDDTHHMMSSZ")-1)
     return 0;  // quit now. too small to be parsed.
   if (datevalue[c_array_len("YYYYMMDD")-1] == 'T'
       && datevalue[c_array_len("YYYYMMDDThhmmss")-1] == 'Z'){
@@ -194,11 +205,33 @@ time_t ICDate::setFromICString(char *datevalue){
 }
 
 /* ******************** ICline *************** */
-ICline::ICline(void){}
+ICline::ICline(void){ // in case nothing is set
+    memset(&(this->name),'\0',sizeof(this->name));
+    memset(&(this->value),'\0',sizeof(this->value));
+}
 char *ICline::getName(void){return this->name;}
 char *ICline::getValue(void){return this->value;}
-void ICline::setName(char *name){strncpy(this->name,name,sizeof(this->name)-1);}
-void ICline::setValue(char *value){strncpy(this->value,value,sizeof(this->value)-1);}
+bool ICline::nameIs(char *comp){
+  if(strncmp(this->name,comp,sizeof(this->name)) == 0)
+    return true;
+  else
+    return false;
+}
+bool ICline::valueIs(char *comp){
+  if(strncmp(this->value,comp,sizeof(this->value)) == 0)
+    return true;
+  else
+    return false;
+}
+void ICline::setName(char *name){
+  strncpy(this->name,name,sizeof(this->name)); // copy sizeof bytes
+  this->name[c_array_len(this->name)-1] = '\0'; // terminate anyway
+}
+void ICline::setValue(char *value){
+  strncpy(this->value,value,sizeof(this->value)); // copy sizeof bytes
+  this->value[c_array_len(this->value)-1] = '\0'; // terminate anyway
+}
+/* icstr must be null-terminated */
 void ICline::setFromICString(char *icstr){
   int offset = 0;
   int value_off = 0, name_off = 0;
@@ -210,8 +243,8 @@ void ICline::setFromICString(char *icstr){
   /* param         = param-name "=" param-value *("," param-value) */
 
   /* init struct members */
-  memset(this->name,'\0',sizeof(this->name));
-  memset(this->value,'\0',sizeof(this->value));
+  memset(&(this->name),'\0',sizeof(this->name));
+  memset(&(this->value),'\0',sizeof(this->value));
     
   while (icstr[offset] != '\0'){
     /* string & delimiters tester */
@@ -236,7 +269,7 @@ void ICline::setFromICString(char *icstr){
 	/* still in name part, copy name and check if not 
 	   writing out-of-bounds */
 	this->name[name_off] = icstr[offset];
-	if(name_off < sizeof(this->name))
+	if(name_off < c_array_len(this->name))
 	  name_off++;
       }else if (semicolumn_cnt > 0 && column_cnt == 0){
 	/* param part, undefined behaviour (not implemented) */
@@ -245,7 +278,7 @@ void ICline::setFromICString(char *icstr){
 	 * value part, copy value and check if not writing out
 	 * of bounds */
 	this->value[value_off] = icstr[offset];
-	if(value_off < sizeof(this->value))
+	if(value_off < c_array_len(this->value))
 	  value_off++;
       }
     }
