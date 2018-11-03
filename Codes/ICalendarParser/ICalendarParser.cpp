@@ -269,7 +269,7 @@ void ICline::setFromICString(char *icstr){
 	/* still in name part, copy name and check if not 
 	   writing out-of-bounds */
 	this->name[name_off] = icstr[offset];
-	if(name_off < c_array_len(this->name))
+	if(name_off < c_array_len(this->name)-1)
 	  name_off++;
       }else if (semicolumn_cnt > 0 && column_cnt == 0){
 	/* param part, undefined behaviour (not implemented) */
@@ -278,7 +278,7 @@ void ICline::setFromICString(char *icstr){
 	 * value part, copy value and check if not writing out
 	 * of bounds */
 	this->value[value_off] = icstr[offset];
-	if(value_off < c_array_len(this->value))
+	if(value_off < c_array_len(this->value)-1)
 	  value_off++;
       }
     }
