@@ -30,7 +30,6 @@ char *ICVevent::getLocation(void){return this->location;}
 
 /* **************** GenericICalParser ************ */
 GenericICalParser::GenericICalParser(void){}
-char *GenericICalParser::readNextLine(void){/* does nothing */}
 /* can only return vevents for now */
 ICVevent *GenericICalParser::getNext(void){
   char ic_begin[] = "BEGIN";

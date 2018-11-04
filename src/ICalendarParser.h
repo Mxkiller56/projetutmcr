@@ -83,7 +83,7 @@ class GenericICalParser {
   ICVevent *getNext(); // common, uses readNextLine, curline and ICline object.setFromICString(curline) on stack. get_ic_events in proto.c
  protected:
   ICVevent curr_vevent;
-  virtual char *readNextLine();
+  virtual char *readNextLine() = 0;
   char curline [IC_LEN_LOGICAL]; // common, used to store current "logical" line in both readNextLine methods
 };
 
