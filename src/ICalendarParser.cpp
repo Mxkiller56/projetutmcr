@@ -117,7 +117,7 @@ char *ICalClientParser::readNextLine(void){
   int linebuf_off = 0;
   int i;
   
-  while(this->client->available()){ // there is still data to read
+  while(this->client->connected()){ // there is still data to read
     /* cache4 moving */
     for (i=c_array_len(this->cache4)-1; i > 0; i--)
       this->cache4[i] = this->cache4[i-1];
