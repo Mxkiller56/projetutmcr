@@ -118,6 +118,7 @@ char *ICalClientParser::readNextLine(void){
   int i;
   
   while(this->client->connected()){ // there is still data to read
+    if(this->client->available()){
     /* cache4 moving */
     for (i=c_array_len(this->cache4)-1; i > 0; i--)
       this->cache4[i] = this->cache4[i-1];
@@ -143,6 +144,7 @@ char *ICalClientParser::readNextLine(void){
 	}
       } // negative outbound read end
     } // skip end
+    } // if end
   } // while end (no more data available)
   return NULL;
 }
