@@ -24,14 +24,12 @@ bool is_in_date_range (ICVevent *event, time_t beg, time_t end){
      | vevent duration |
 */	     
 bool over_date_range(ICVevent *event, time_t beg, time_t end){
-  // remark: case 4 is is_in_date_range
-  if ((event->getDtstart() <= beg && event->getDtend() >= end) || // case 1
-      (event->getDtstart() >= beg && event->getDtend() >= end) || // case 2
-      (event->getDtstart() <= beg && event->getDtend() <= end) || // case 3
-      (event->getDtstart() >= beg && event->getDtend() <= end))   // case 4
-    return true;
-  else
+  // assuming that event->getDtstart() < event->getDtend()
+  if ((event->getDtstart() <= beg && event->getDtend() <= beg) || // all the event is before beg
+      (event->getDtstart() >= end && event->getDtend() >= end)) // all the event is after end
     return false;
+  else
+    return true; // else it's overlapping beg or end
 }
 /* if a vevent is in a location */
 bool is_in_location (ICVevent *event, char *location){
