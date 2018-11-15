@@ -1,4 +1,5 @@
 #include "ICalendarParser.h"
+#include "CalConnector.h"
 #include "Arduino_testing.h"
 #include "util.h"
 #include <stdint.h>
@@ -105,5 +106,25 @@ int main (void){
     std::cout << "dtend:" << asctime(localtime(&tmptime)) << "\n";
   }
   free(icsbuf);
+  #endif
+  #ifndef ICALBUFPARSDMO
+  #ifndef WFCLIENTDMO
+  WiFi::begin("SSID");
+  time_t prev_midnight = ICDate::setFromICString("20180122T000000Z");
+  time_t next_midnight = ICDate::setFromICString("20180123T000000Z");
+  ICVevent icvevs[8];
+  char onlineresource[] = "http://example.com/example.ics";
+  char ourlocation[] = "Salle Télécom. 1";
+  int eventsnum =
+  CalCo::events4loc_from_url(onlineresource,ourlocation, prev_midnight, next_midnight, icvevs, c_array_len(icvevs));
+  std::cout << "found " << eventsnum << " event(s) between " << ctime(&prev_midnight) <<  " and " << ctime(&next_midnight) << " in " << ourlocation << "\n";
+  for (int i=0; i<=eventsnum-1; i++){
+    std::cout << icvevs[i].getSummary() << " in " << icvevs[i].getLocation() << "\n";
+  }
+  #else
+  #warning "events filter testing disabled because of demo(s) !"
+  #endif
+  #else
+  #warning "events filter testing disabled because of demo(s) !"
   #endif
 }
