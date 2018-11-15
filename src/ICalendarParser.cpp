@@ -9,7 +9,6 @@
 #define MKTIME timegm
 #endif
 
-#define c_array_len(array) sizeof(array)/sizeof(array[0])
 
 /* **************** ICVevent ****************** */
 ICVevent::ICVevent(void){}

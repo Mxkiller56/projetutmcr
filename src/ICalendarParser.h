@@ -16,6 +16,7 @@
 #include "Client.h"
 #endif
 
+#define c_array_len(array) sizeof(array)/sizeof(array[0])
 // this breaks readNextLine(). Investigate.
 // doesn't break if defined to 256
 // strange break on 235
