@@ -2,12 +2,15 @@
 #define ARDUINO_TESTING_H
 #include <stdint.h>
 #include <cstddef>
+#include <time.h>
 
 #define TRUE true
 #define FALSE false
 
 #define WIFI_STA 0
 #define HTTP_CODE_OK 200
+
+unsigned long millis(void);
 
 class WiFi {
  public:

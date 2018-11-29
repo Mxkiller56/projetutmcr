@@ -115,9 +115,12 @@ char *ICalClientParser::readNextLine(void){
   static int skip=0, data_off = 0;
   int linebuf_off = 0;
   int i;
+  unsigned long next_timeout = millis() + ic_http_tmout;
   
-  while(this->client->connected()){ // there is still data to read
+  while(this->client->connected() && millis() < next_timeout){
     if(this->client->available()){
+    // we received data, actualize
+    next_timeout = millis() + ic_http_tmout;
     /* cache4 moving */
     for (i=c_array_len(this->cache4)-1; i > 0; i--)
       this->cache4[i] = this->cache4[i-1];

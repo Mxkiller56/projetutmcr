@@ -7,6 +7,13 @@ char *contentptr = NULL;
 bool _connected = true;
 WiFiClient _wfclient;
 
+unsigned long millis (void){
+  static clock_t reference = 0;
+  if (reference == 0)
+    reference = clock();
+  return clock() - reference;
+}
+
 bool WiFi::disconnect(bool disco){/* french pun :)*/
   return true;
 }

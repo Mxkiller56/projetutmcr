@@ -24,6 +24,9 @@
 #define IC_VALUELEN (150)
 #define IC_LOCATIONLEN (54)
 #define IC_SUMMARYLEN (150)
+// read timeout in milliseconds (10 seconds for now)
+// should be used with millis() function
+unsigned const long ic_http_tmout = 10000;
 // not used
 #define IC_PROPSLEN
 #define IC_LEN_LOGICAL (IC_NAMELEN+IC_VALUELEN)
