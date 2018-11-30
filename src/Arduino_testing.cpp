@@ -51,6 +51,7 @@ size_t Stream::readBytes(uint8_t *buffer, size_t length){
     return count;
 }
 
+void HTTPClient::useHTTP10(bool usehttp10 = true){} // does nothing
 bool HTTPClient::begin(char *url){return true;}
 int HTTPClient::GET(void){return HTTP_CODE_OK;}
 int HTTPClient::getSize(void){}

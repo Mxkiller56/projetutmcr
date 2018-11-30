@@ -46,5 +46,6 @@ class HTTPClient {
   int getSize(void); // document length (-1 if no length provided)
   WiFiClient *getStreamPtr(void);
   bool connected(void); // still connected to server ?
+  void useHTTP10(bool); // use HTTP/1.0 instead of HTTP/1.1 (default)
 };
 #endif

@@ -7,6 +7,7 @@ namespace CalCo {
   /* filters */
   bool matches_date_range (ICVevent*, time_t beg, time_t end);
   bool matches_location (ICVevent*, char *location);
+  bool over_date_range(ICVevent *event, time_t beg, time_t end);
   /** @param url c_str, where iCalendar file is stored (http(s) only urls)
       @param loc c_str, location events must match (not case-sensitive)
       @param icvevs array of vevents
