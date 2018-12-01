@@ -8,12 +8,15 @@
 
 
 /** init new object status */
-CourseSlot::CourseSlot(int beg_h, int beg_m, int end_h, int end_m){
+CourseSlot::CourseSlot(int beg_h, int beg_m, int end_h, int end_m, int tzoff_hours, int tzoff_min){
   assoc_vev = NULL; // no associated vevent
   local_tm_begin_hour = beg_h%23;
   local_tm_begin_min = beg_m%60;
   local_tm_end_hour = end_h%23;
   local_tm_end_min = end_m%60;
+  // set internal timezone offset
+  this->tzoff_hours = tzoff_hours%13;
+  this->tzoff_min = tzoff_min%60;
   activity_detected = false;
 }
 /** @return the state of the slot */
@@ -41,42 +44,23 @@ LedColor CourseSlot::whichColor(void){
   return LedColor::RED;
 }
 
-void CourseSlot::associateVevent(ICVevent *icvev){
-  if (icvev != NULL)
+bool CourseSlot::associateVevent(ICVevent *icvev, struct tm *UTCnow){
+  // 1. convert CourseSlot beg and end to UTC time
+  time_t beg = this->beg2UTC(UTCnow);
+  time_t end = this->end2UTC(UTCnow);
+  // 2. link vevent if matching
+  if (CalCo::over_date_range(icvev,beg,end)){
     this->assoc_vev = icvev;
-  else
-    this->assoc_vev = NULL;
+    return true;
+  }
+  else{
+    // don't set assoc_vev to NULL as we may overwrite
+    // previous value. Just return false.
+    return false;
+  }
 }
 
-
-/** Associate LED slots to ICVevents.
-    ICVevents have their begin and end expressed in UTC
-    while LED slots have their begin and end expressed in localtime
-    that's why you need to pass timezone offset
-    @param cslots array of CourseSlots
-    @param slotcount number of CourseSlots in cslots
-    @param icvevs array of ICVevents
-    @param vevcount size of ICVevents array
-    @param tzoff_hours your timezone is plus or minus x hours compared to UTC
-*/
-void cslots_set (CourseSlot* cslots, int slotcount, ICVevent *icvevs, int vevcount, struct tm *UTCnow, int tzoff_hours){
-  time_t beg = 0;
-  time_t end = 0;
-  int ivev, islot;
-
-  for (ivev = 0; ivev <= vevcount-1; ivev++){
-    for (islot = 0; islot <= slotcount-1; islot++){
-      // 1. convert CourseSlot beg and end to UTC time
-      beg = cslots[islot].beg2UTC(UTCnow, tzoff_hours);
-      end = cslots[islot].end2UTC(UTCnow, tzoff_hours);
-      // 2. link vevent if matching
-      if (CalCo::over_date_range(&icvevs[ivev],beg,end))
-	cslots[islot].associateVevent(&icvevs[ivev]);
-    }
-  }  
-}
-
-time_t CourseSlot::smth2UTC(int local_hour, int local_min, struct tm *UTCnow, int tzoff_hours){
+time_t CourseSlot::smth2UTC(int local_hour, int local_min, struct tm *UTCnow){
   time_t rval = 0;
   struct tm smth_time = *UTCnow; // copy now, we don't wan't to modify UTCnow as it may be reused
   smth_time.tm_sec = 0; // granularity in CourseSlot is limited to minutes
@@ -85,24 +69,25 @@ time_t CourseSlot::smth2UTC(int local_hour, int local_min, struct tm *UTCnow, in
   rval = MKTIME(&smth_time);
   // converting to UTC. local_hour was +1H from UTC, and our tzoff_hours is +1H
   // so rval was localtime (aka UTC+1H), then it's UTC+1H-1H = UTC
-  rval -= SECS_PER_HOUR * tzoff_hours; // note that tzoff_hours can be negative.
+  rval -= SECS_PER_HOUR * this->tzoff_hours; // note that tzoff_hours can be negative.
+  rval -= SECS_PER_MIN * this->tzoff_min;
   return rval;
 }
 /** return when is the end of this slot, in UTC time.
     @param UTCnow tm struct representing the actual time
     @param tzoff_hours your timezone offset in hours
 */
-time_t CourseSlot::end2UTC(struct tm *UTCnow, int tzoff_hours){
+time_t CourseSlot::end2UTC(struct tm *UTCnow){
   return smth2UTC(this->local_tm_end_hour,
 		  this->local_tm_end_min,
-		  UTCnow, tzoff_hours);
+		  UTCnow);
 }
 /** return when is the beginning of this slot, in UTC time.
     @param UTCnow tm struct representing the actual time
     @param tzoff_hours your timezone offset in hours
 */
-time_t CourseSlot::beg2UTC(struct tm *UTCnow, int tzoff_hours){
+time_t CourseSlot::beg2UTC(struct tm *UTCnow){
   return smth2UTC(this->local_tm_begin_hour,
 		  this->local_tm_begin_min,
-		  UTCnow, tzoff_hours);
+		  UTCnow);
 }

@@ -129,12 +129,14 @@ int main (void){
   #warning "events filter testing disabled because of demo(s) !"
   #endif
   // testing LedMng features
-  // init by constructor
+  /* ICVevents have their begin and end expressed in UTC
+     while LED slots have their begin and end expressed in localtime 
+     (you must set their TZ offset before) */
   CourseSlot ledmng_test_slots[] = {
-    CourseSlot(8,0,    10,0), // course slots expressed in localtime
-    CourseSlot(10,15,  12,15),
-    CourseSlot(13,45,  15,45),
-    CourseSlot(16,0,   18,0)
+    CourseSlot(8,0,    10,0,  1), // our "timezone" is UTC+1hour
+    CourseSlot(10,15,  12,15, 1), 
+    CourseSlot(13,45,  15,45, 1),
+    CourseSlot(16,0,   18,0,  1)
   };
   ICVevent ledmng_vevents[4]; // no init by constructor (Arduino-style, why do I follow this ?)
   // sorry for this very long initialisation
@@ -148,7 +150,8 @@ int main (void){
   ledmng_vevents[1].setSummary("Summary2");
   ledmng_vevents[2].setDtstart(ICDate::setFromICString("20181130T124500Z"));
   ledmng_vevents[2].setDtend(  ICDate::setFromICString("20181130T144500Z"));
-  ledmng_vevents[2].setLocation("TD9");
+  ledmng_vevents[2].setLocation("TD9"); // note that association is made
+  // regardless of the location (should be filtered first with CalConnector)
   ledmng_vevents[2].setSummary("Summary3");
   // shouldn't fit, out of range
   ledmng_vevents[3].setDtstart(ICDate::setFromICString("20181130T190000Z"));
@@ -157,8 +160,14 @@ int main (void){
   ledmng_vevents[3].setSummary("Summary4");
   time_t ledmng_now = ICDate::setFromICString("20181130T093253Z");
   struct tm *ledmng_utcnow = gmtime(&ledmng_now);
-  /* doesn't care about locations, cares only about time */
-  cslots_set (ledmng_test_slots, c_array_len(ledmng_test_slots), ledmng_vevents, c_array_len(ledmng_vevents), ledmng_utcnow, 1);
+  // standard way of associating. Should be used like this
+  // in final program also. ivev limit is dynamic (depends of the
+  // number of matching vevents)
+  for (int ivev = 0; ivev <= c_array_len(ledmng_vevents)-1; ivev++){
+    for (int islot = 0; islot <= c_array_len(ledmng_test_slots)-1; islot++){
+      ledmng_test_slots[islot].associateVevent(&ledmng_vevents[ivev],ledmng_utcnow);
+    }
+  }
   if (ledmng_test_slots[0].whichState() == CourseState::PLANNED &&
       ledmng_test_slots[1].whichState() == CourseState::PLANNED &&
       ledmng_test_slots[2].whichState() == CourseState::PLANNED &&

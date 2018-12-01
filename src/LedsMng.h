@@ -21,31 +21,23 @@ enum class LedColor {RED, ORANGE, GREEN, WHITE}; // here colors are matching sta
 
 class CourseSlot {
  public:
-  CourseSlot(int beg_h=0, int beg_m=0, int end_h=0, int end_m=0);
+  CourseSlot(int beg_h=0, int beg_m=0, int end_h=0, int end_m=0, int tzoff_hours=0, int tzoff_min=0);
   LedColor whichColor(void);
   CourseState whichState(void);
-  time_t end2UTC(struct tm *UTCnow, int tzoff_hours);
-  time_t beg2UTC(struct tm *UTCnow, int tzoff_hours);
-  void associateVevent(ICVevent *);
+  time_t end2UTC(struct tm *UTCnow);
+  time_t beg2UTC(struct tm *UTCnow);
+  bool associateVevent(ICVevent *, struct tm *UTCnow);
+  bool isActiveNow(struct tm *UTCnow);
   int local_tm_begin_hour;
   int local_tm_begin_min;
   int local_tm_end_hour;
   int local_tm_end_min;
   bool activity_detected; // if there was activity between pit beg and pit end, set to true
  protected:
+  int tzoff_hours;
+  int tzoff_min;
   ICVevent *assoc_vev; // matching vevent. NULL if none.
-  time_t smth2UTC(int local_hour, int local_min, struct tm *UTCnow, int tzoff_hours);
+  time_t smth2UTC(int local_hour, int local_min, struct tm *UTCnow);
 };
-
-void cslots_set (CourseSlot* cslots, int slotcount, ICVevent *icvevs, int vevcount, struct tm *UTCnow, int tzoff_hours);
-
-/* example: time slots used by MCR
-CourseSlot mcr_slots[] = {
-  CourseSlot(8,0,   10,0),
-  CourseSlot(0,15,  12,15),
-  CourseSlot(13,45, 15,45),
-  CourseSlot(16,0,  18,0)
-};
-*/
 
 #endif
