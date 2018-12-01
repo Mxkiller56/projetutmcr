@@ -1,5 +1,5 @@
 NAME = test
-OBJS = ICalendarParser.o util.o Arduino_testing.o CalConnector.o testing.o
+OBJS = ICalendarParser.o util.o Arduino_testing.o CalConnector.o testing.o LedsMng.o
 CC   = g++
 CPPFLAGS = -DTESTING
 # if you don't want to run demos, comment this out

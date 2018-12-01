@@ -1,3 +1,4 @@
+#include "LedsMng.h"
 #include "ICalendarParser.h"
 #include "CalConnector.h"
 #include "Arduino_testing.h"
@@ -127,4 +128,42 @@ int main (void){
   #else
   #warning "events filter testing disabled because of demo(s) !"
   #endif
+  // testing LedMng features
+  // init by constructor
+  CourseSlot ledmng_test_slots[] = {
+    CourseSlot(8,0,    10,0), // course slots expressed in localtime
+    CourseSlot(10,15,  12,15),
+    CourseSlot(13,45,  15,45),
+    CourseSlot(16,0,   18,0)
+  };
+  ICVevent ledmng_vevents[4]; // no init by constructor (Arduino-style, why do I follow this ?)
+  // sorry for this very long initialisation
+  ledmng_vevents[0].setDtstart(ICDate::setFromICString("20181130T070000Z"));
+  ledmng_vevents[0].setDtend(  ICDate::setFromICString("20181130T090000Z"));
+  ledmng_vevents[0].setLocation("TD0");
+  ledmng_vevents[0].setSummary("Summary1");
+  ledmng_vevents[1].setDtstart(ICDate::setFromICString("20181130T091500Z"));
+  ledmng_vevents[1].setDtend(  ICDate::setFromICString("20181130T111500Z"));
+  ledmng_vevents[1].setLocation("TD0");
+  ledmng_vevents[1].setSummary("Summary2");
+  ledmng_vevents[2].setDtstart(ICDate::setFromICString("20181130T124500Z"));
+  ledmng_vevents[2].setDtend(  ICDate::setFromICString("20181130T144500Z"));
+  ledmng_vevents[2].setLocation("TD9");
+  ledmng_vevents[2].setSummary("Summary3");
+  // shouldn't fit, out of range
+  ledmng_vevents[3].setDtstart(ICDate::setFromICString("20181130T190000Z"));
+  ledmng_vevents[3].setDtend(  ICDate::setFromICString("20181130T200000Z"));
+  ledmng_vevents[3].setLocation("TD0");
+  ledmng_vevents[3].setSummary("Summary4");
+  time_t ledmng_now = ICDate::setFromICString("20181130T093253Z");
+  struct tm *ledmng_utcnow = gmtime(&ledmng_now);
+  /* doesn't care about locations, cares only about time */
+  cslots_set (ledmng_test_slots, c_array_len(ledmng_test_slots), ledmng_vevents, c_array_len(ledmng_vevents), ledmng_utcnow, 1);
+  if (ledmng_test_slots[0].whichState() == CourseState::PLANNED &&
+      ledmng_test_slots[1].whichState() == CourseState::PLANNED &&
+      ledmng_test_slots[2].whichState() == CourseState::PLANNED &&
+      ledmng_test_slots[3].whichState() == CourseState::NOCOURSE_NOACT)
+    std::cout << "LedMng test passed\n";
+  else
+    std::cout << "LedMng test FAILED\n";
 }
