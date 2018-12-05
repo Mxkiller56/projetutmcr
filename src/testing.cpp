@@ -171,7 +171,11 @@ int main (void){
   if (ledmng_test_slots[0].whichState() == CourseState::PLANNED &&
       ledmng_test_slots[1].whichState() == CourseState::PLANNED &&
       ledmng_test_slots[2].whichState() == CourseState::PLANNED &&
-      ledmng_test_slots[3].whichState() == CourseState::NOCOURSE_NOACT)
+      ledmng_test_slots[3].whichState() == CourseState::NOCOURSE_NOACT &&
+      ledmng_test_slots[0].isActiveNow(ledmng_utcnow) == false  &&
+      ledmng_test_slots[1].isActiveNow(ledmng_utcnow) == true   &&
+      ledmng_test_slots[2].isActiveNow(ledmng_utcnow) == false  &&
+      ledmng_test_slots[3].isActiveNow(ledmng_utcnow) == false)
     std::cout << "LedMng test passed\n";
   else
     std::cout << "LedMng test FAILED\n";

@@ -19,6 +19,20 @@ CourseSlot::CourseSlot(int beg_h, int beg_m, int end_h, int end_m, int tzoff_hou
   this->tzoff_min = tzoff_min%60;
   activity_detected = false;
 }
+
+/** If we're currently in the led slot
+    (in time).
+ */
+bool CourseSlot::isActiveNow(struct tm *UTCnow){
+  time_t beg = this->beg2UTC(UTCnow);
+  time_t end = this->end2UTC(UTCnow);
+  time_t now = MKTIME(UTCnow);
+  if (beg < now && end > now)
+    return true;
+  else
+    return false;
+}
+
 /** @return the state of the slot */
 CourseState CourseSlot::whichState(void){
   if (assoc_vev != NULL) // there is an associated vevent
