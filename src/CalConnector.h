@@ -1,13 +1,17 @@
 #ifndef CALCONNECTOR_H
 #define CALCONNECTOR_H
+#ifndef TESTING
+#include <HTTPClient.h>
+#endif
 #include "LedsMng.h"
 #include "ICalendarParser.h"
 #include <time.h>
+#include <string.h>
 
 namespace CalCo {
   /* filters */
-  bool matches_date_range (ICVevent*, time_t beg, time_t end);
-  bool matches_location (ICVevent*, char *location);
+  bool is_in_date_range (ICVevent*, time_t beg, time_t end);
+  bool is_in_location (ICVevent*, char *location);
   bool over_date_range(ICVevent *event, time_t beg, time_t end);
   /** Get IC Vevents from an URL for a location between start and stop in time,
       and store them in the icvevs array

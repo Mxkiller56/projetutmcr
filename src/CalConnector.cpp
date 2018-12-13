@@ -43,7 +43,7 @@ bool is_in_location (ICVevent *event, char *location){
   int events4loc_from_url (char *url, char *loc, time_t start, time_t stop, ICVevent *icvevs, int vevcount){
   ICVevent *curr_icvev;
   ICalClientParser icparser = ICalClientParser();
-  HTTPClient http = HTTPClient();
+  HTTPClient http;
   int httpCode = 0;
   int icvevs_offset = 0;
   
