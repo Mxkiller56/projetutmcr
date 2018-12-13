@@ -1,0 +1,26 @@
+digraph states {
+	node [shape=circle];
+	reboot[label="redémarrage"];
+	wifico[label="connexion\nWiFi"];
+	err_wifico[label="erreur WiFi"];
+	date[label="récupération\ndate"];
+	err_date[label="erreur\ndate"];
+	ics[label="récupération\nics"];
+	err_ics[label="erreur ics"];
+	settings[label="paramétrage"];
+	showtime[label="affichage infos"];
+
+	reboot->wifico
+	wifico->err_wifico
+	wifico->date
+	date->err_date
+	date->ics
+	ics->err_ics
+	ics->showtime
+	showtime->settings
+	settings->reboot
+	err_wifico->settings
+	err_date->settings
+	err_ics->settings
+	showtime->ics
+}
