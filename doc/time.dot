@@ -1,0 +1,32 @@
+digraph time {
+  subgraph cluster0 {
+    style=filled;
+    color=lightgrey;
+    label="Led Slots";
+    node [shape=rectangle,style=filled,color=lightblue];
+    lstart[label="local time\nstart"];
+    lend[label="local time\nend"];
+    {
+    node [shape=ellipse];
+    lend_utc[label="UTC end",color=orange];
+    lstart_utc[label="UTC start",color=orange];
+    led_utc[label="temps UTC",color=orange];
+    }
+    lstart->lstart_utc [label="-TZ offset",fontcolor=darkgreen];
+    lend->lend_utc [label="-TZ offset",fontcolor=darkgreen];
+    led_utc->lend_utc;
+    led_utc->lstart_utc;
+  }
+  subgraph cluster1 {
+    label="Programme principal";
+    style=filled;
+    color=lightgrey;
+    prog_utc[shape=ellipse,style=filled,color=orange,label="temps programme\nen UTC"];
+    tzoff[shape=rectangle,style=filled,color=green,label="TimeZone\noffset"];
+  }
+  ntp[shape=rectangle,style=filled,color=orange,label="temps UTC via NTP"];
+  access[style=filled,color=lightblue,label="fonctions utilisant\nl'heure locale "];
+  ntp->prog_utc;
+  prog_utc->access [fontcolor=darkgreen,label="+TZ offset"];
+  prog_utc->led_utc;
+}
