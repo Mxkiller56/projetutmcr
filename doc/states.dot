@@ -1,26 +1,36 @@
 digraph states {
-	node [shape=circle];
-	reboot[label="redémarrage"];
-	wifico[label="connexion\nWiFi"];
-	err_wifico[label="erreur WiFi"];
-	date[label="récupération\ndate"];
-	err_date[label="erreur\ndate"];
-	ics[label="récupération\nics"];
-	err_ics[label="erreur ics"];
-	settings[label="paramétrage"];
-	showtime[label="affichage infos"];
-
-	reboot->wifico
-	wifico->err_wifico
-	wifico->date
-	date->err_date
-	date->ics
-	ics->err_ics
-	ics->showtime
-	showtime->settings
-	settings->reboot
-	err_wifico->settings
-	err_date->settings
-	err_ics->settings
-	showtime->ics
+  rankdir="LR";
+  node [shape=circle];
+  reboot[label="redémarrage"];
+  wifico[label="connexion\nWiFi"];
+  date[label="récupération\ndate"];
+  ics[label="récupération\nics"];
+  settings[label="paramétrage"];
+  showtime[label="affichage infos"];
+  blecli[label="client\nBLE", color=blue];
+  /* erreurs */
+  {
+    node [color=red];
+    err_wifico[label="erreur WiFi"];	   
+    err_date[label="erreur\ndate"];
+    err_ics[label="erreur ics"];
+  }
+  {
+    edge [color=red, fontcolor=red];
+    wifico->err_wifico [label="timeout connexion"];
+    date->err_date [label="timeout ou injoignable"];
+    ics->err_ics [label="timeout ou injoignable"];
+    err_wifico->settings;
+    err_date->settings;
+    err_ics->settings;
+  }
+  reboot->wifico;
+  wifico->date;
+  date->ics;
+  ics->showtime;
+  settings->reboot;
+  showtime->ics;
+  showtime->date;
+  showtime->showtime;
+  blecli->settings [color=blue,label="sur demande"];
 }
