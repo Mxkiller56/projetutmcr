@@ -1,5 +1,7 @@
-NAME = test
-OBJS = ICalendarParser.o util.o Arduino_testing.o CalConnector.o testing.o LedsMng.o
+# objects for target "test"
+TESTOBJS = ICalendarParser.o util.o Arduino_testing.o CalConnector.o testing.o LedsMng.o
+# objects for target "simrun"
+SIMOBJS = ICalendarParser.o util.o Arduino_testing.o CalConnector.o main.o LedsMng.o simrun.o
 CC   = g++
 CPPFLAGS = -DTESTING
 # if you don't want to run demos, comment this out
@@ -12,11 +14,17 @@ CFLAGS = -fpermissive -g -fstack-protector-all
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<
 .c.o:
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<
+%.cpp: %.ino
+	cp $< $@
 
-all: $(NAME)
+all: test simrun
 
-$(NAME): $(OBJS)
-	$(CC) $(OBJS) -o $(NAME)
+test:  $(TESTOBJS)
+	$(CC) $(TESTOBJS) -o test
+
+simrun: $(SIMOBJS)
+	$(CC) $(CPPFLAGS) $(SIMOBJS) -o simrun
+
 clean:
 	rm *.o
-	rm $(NAME)
+	rm test
