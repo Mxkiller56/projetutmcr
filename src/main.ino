@@ -98,7 +98,7 @@ void ledinfo(CourseSlot *slotinfo){
 // exécuté une fois au démarrage
 void setup() {
   Serial.begin(115200);
-  Serial.print("[debug] MCR now booting");
+  Serial.println("[debug] MCR now booting");
   /* pins des leds en mode OUTPUT */
   pinMode(lVerte, OUTPUT);
   pinMode(lRouge, OUTPUT);
