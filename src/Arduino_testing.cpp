@@ -12,8 +12,21 @@ WiFiClient _wfclient;
 
 /* functions with global visibility */
 bool getLocalTime(struct tm * info, uint32_t ms){
+#ifndef FOREVERTODAY
   const time_t time_now = time(NULL);
   *info = *(localtime(&time_now));
+#else
+  /* 20171208 */
+  struct tm today = {};
+  today.tm_sec = 23;
+  today.tm_min = 10;
+  today.tm_hour = 8;
+  today.tm_mday = 8;
+  today.tm_mon = 12 - 1;
+  today.tm_year = 2017 - 1900;
+  mktime(&today);
+  *info = today;
+#endif
   return true;
 }
 void configTime(long gmtOffset_sec, int daylightOffset_sec, const char* server1, const char* server2, const char* server3){
@@ -29,7 +42,12 @@ unsigned long millis (void){
 void pinMode(int pinNumber, int mode){/* dummy */}
 void digitalWrite(int pinNumber, int state){/* dummy */}
 int digitalRead(int pinNumber){/* dummy, might be extended ? */}
-bool _802_1x_eap_connect(char *ssid, char *identity, char *password){return true; /* in the magical world of networked software, wifi _always_ work ;) */}
+bool _802_1x_eap_connect(char *ssid, char *identity, char *password){
+   /* in the magical world of networked software, wifi _always_ work
+      ;) */ 
+  WiFi::begin("SSID");
+  return true;
+}
 
 
 /* class methods */
@@ -80,6 +98,7 @@ void LiquidCrystal_I2C::init(){}
 void LiquidCrystal_I2C::backlight(){bl_on=true;}
 void LiquidCrystal_I2C::noBacklight(){bl_on=false;}
 bool LiquidCrystal_I2C::getBacklight(){return bl_on;}
+void LiquidCrystal_I2C::setCursor(int x, int y){}
 
 size_t Client::available(void){
   return _connected;

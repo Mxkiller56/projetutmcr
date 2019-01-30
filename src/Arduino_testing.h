@@ -40,8 +40,8 @@ class WiFi {
 class Stream {
  public:
   virtual size_t available() = 0;
-  size_t readBytes(uint8_t *buf, size_t toread); /** @param buf buffer to fill with data
-						  @param toread size of data to get */
+  size_t readBytes(uint8_t *buffer, size_t length); /** @param buffer buffer to fill with data
+						  @param length size of data to get */
   int read(void);
 };
 /* note: Client is also a Stream */
@@ -76,6 +76,7 @@ class LiquidCrystal_I2C: public Print {
   void backlight();
   void noBacklight();
   bool getBacklight();
+  void setCursor(int,int);
  private:
   bool bl_on=true; // backlight is on by default
 };
