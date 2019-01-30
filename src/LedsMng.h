@@ -28,6 +28,7 @@ class CourseSlot {
   time_t beg2UTC(struct tm *UTCnow);
   bool associateVevent(ICVevent *, struct tm *UTCnow);
   bool isActiveNow(struct tm *UTCnow);
+  ICVevent *getAssociatedVevent(void);
   int local_tm_begin_hour;
   int local_tm_begin_min;
   int local_tm_end_hour;

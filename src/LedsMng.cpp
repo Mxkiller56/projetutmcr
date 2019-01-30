@@ -20,6 +20,11 @@ CourseSlot::CourseSlot(int beg_h, int beg_m, int end_h, int end_m, int tzoff_hou
   activity_detected = false;
 }
 
+/** return associated Vevent or NULL
+    if there is no associated Vevent */
+ICVevent *CourseSlot::getAssociatedVevent(void){
+  return assoc_vev;
+}
 /** If we're currently in the led slot
     (in time).
  */
