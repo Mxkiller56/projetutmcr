@@ -2,7 +2,7 @@
 #include <WiFi.h>
 
 bool _802_1x_eap_connect(char *ssid, char *identity, char *password){
-  Serial.println(ssid);
+  Serial.println("[debug] connecting to wifi");
   WiFi.disconnect(true);  //disconnect form wifi to set new wifi connection
   WiFi.mode(WIFI_STA);
   esp_wifi_sta_wpa2_ent_set_identity((uint8_t *)identity, strlen(identity)); //provide identity
@@ -14,16 +14,13 @@ bool _802_1x_eap_connect(char *ssid, char *identity, char *password){
   unsigned long next_timeout = millis() + 10000L; // 10 seconds
   while (WiFi.status() != WL_CONNECTED && millis() < next_timeout) {
     delay(500);
-#ifdef DEBUG
     Serial.print(".");
-#endif
   }
   if (WiFi.status() == WL_CONNECTED){
-#ifdef DEBUG
-    Serial.println("WiFi connected");
-    Serial.println("IP address set: ");
+    Serial.print("[debug] connected to ");
+    Serial.println(ssid);
+    Serial.println("[debug] IP address set: ");
     Serial.println(WiFi.localIP()); //print LAN IP
-#endif
     return true;
   } else
     return false; // we had a problem connecting
