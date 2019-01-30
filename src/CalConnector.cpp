@@ -34,7 +34,7 @@ bool over_date_range(ICVevent *event, time_t beg, time_t end){
 /* if a vevent is in a location */
 bool is_in_location (ICVevent *event, char *location){
   /* we found the searched location in the event */
-  if (strcasestr(event->getLocation(), location) != NULL)
+  if (strstr(event->getLocation(), location) != NULL)
     return true;
   else
     return false;
