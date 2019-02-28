@@ -2,6 +2,7 @@
 #include "ICalendarParser.h"
 #include "CalConnector.h"
 #include "Arduino_testing.h"
+#include "TaskMgr.h"
 #include "util.h"
 #include <stdint.h>
 #include <time.h>
@@ -9,6 +10,8 @@
 #include <fstream>
 #include <iostream>
 char ICS_FILE[] = "example.ics";
+
+void emptyaction(void){}
 
 int main (void){
   /* test ICDate functionnality */
@@ -179,4 +182,51 @@ int main (void){
     std::cout << "LedMng test passed\n";
   else
     std::cout << "LedMng test FAILED\n";
+
+  // testing schedEvt
+  bool sched_evt_ok = true;
+  // chain feature
+  schedEvt ev1, ev2, ev3;
+  int a = 5; // for non-linearity
+  schedEvt ev4;
+  ev1.setNext(&ev2);
+  ev2.setNext(&ev3);
+  // before ev1 ev2 ev3 (remove MIDDLE)
+  ev2.unlink_myself(&ev1); // after ev1 ev3
+  if (ev1.getNext() != &ev3)
+    sched_evt_ok = false;
+  // before ev1 ev3 (remove LAST)
+  ev3.unlink_myself(&ev1); // after ev1
+  if (ev1.getNext() != NULL)
+    sched_evt_ok = false;
+  // before ev1
+  ev1.unlink_myself(&ev1); // after ev1 (testing corner-cases...)
+  if (ev1.getNext() != NULL) 
+    sched_evt_ok = false;
+  ev1.setNext(&ev2); // before ev1 ev2
+  ev1.unlink_myself(&ev1); // remove FIRST, after ev1
+  if (ev1.getNext() != NULL)
+    sched_evt_ok = false;
+  // action exec feature
+  time_t tmgr_time_now = time(NULL);
+  ev1.setWhen(tmgr_time_now);
+  ev1.setAction(&emptyaction);
+  if (ev1.execAction(tmgr_time_now - 10) == !false || /* trying to exec *before* */
+      ev1.execAction(tmgr_time_now) == !true || /* trying to exec now, should be OK */
+      ev1.execAction(tmgr_time_now) == !false) /* trying to exec more than once */
+    sched_evt_ok = false;
+  ev1.setWhen(tmgr_time_now-5L*60L); // 5 minutes before
+  if (ev1.execAction(tmgr_time_now) != true) // should exec *again* because we changed time
+    sched_evt_ok = false;
+  // now testing generic algorithm
+  ev1.setNext(&ev2); // ev1 is root
+  ev2.setNext(&ev3);
+  schedEvt *evptr = &ev1;
+  //  ev1.begin(&emptyaction,tmgr_time_now);
+  //  while ((evptr = evptr->getNext()) != NULL)
+  
+  if (sched_evt_ok)
+    std::cout << "TaskMgr test passed\n";
+  else
+    std::cout << "TaskMgr test FAILED\n";
 }

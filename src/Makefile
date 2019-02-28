@@ -1,5 +1,5 @@
 # objects for target "test"
-TESTOBJS = ICalendarParser.o util.o Arduino_testing.o CalConnector.o testing.o LedsMng.o
+TESTOBJS = ICalendarParser.o util.o Arduino_testing.o CalConnector.o testing.o LedsMng.o TaskMgr.o
 # objects for target "simrun"
 SIMOBJS = ICalendarParser.o util.o Arduino_testing.o CalConnector.o main.o LedsMng.o simrun.o
 CC   = g++
