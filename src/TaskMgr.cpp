@@ -48,13 +48,17 @@ bool schedEvt::execAction(time_t utcnow){
     return false;
   }
 }
-/** unlinks itself from the schedEvent chain pointed by chainptr */
-void schedEvt::unlink_myself(schedEvt *chainptr){ // chain can be size 1 or greater
-  schedEvt *curr_ev = chainptr;
-  schedEvt *prev_event = chainptr;
+
+/* ******* TaskMgr class methods ****** */
+TaskMgr::TaskMgr(){
+  evs_p = NULL; // inits root event pointer
+}
+void TaskMgr::unlink_task(schedEvt *task){ // chain can be size 1 or greater
+  schedEvt *curr_ev = this->evs_p;
+  schedEvt *prev_event = this->evs_p;
   // /!\ event chain is not linear in term of memory addresses 
   //     no next event                     reached this (us)
-  while (curr_ev->getNext() != NULL  && curr_ev != this) {
+  while (curr_ev->getNext() != NULL  && curr_ev != task) {
     prev_event = curr_ev;
     curr_ev = curr_ev->getNext(); // current event becomes the next event
   }
@@ -72,5 +76,77 @@ void schedEvt::unlink_myself(schedEvt *chainptr){ // chain can be size 1 or grea
   //      ^_____NULL__/
   prev_event->setNext(curr_ev->getNext());
   // reset yourself, you are alone now !
-  this->setNext(NULL);
+  task->setNext(NULL);
+}
+
+/** inserts a task in the chained list
+ * task is inserted at the right */
+void TaskMgr::insert_task(schedEvt *task, schedEvt *where){
+  //        insert here 
+  //            v
+  // | curr_ev | next_event ? |
+  schedEvt *curr_ev = this->evs_p;
+  while (curr_ev->getNext() != NULL && curr_ev != where){
+    curr_ev = curr_ev->getNext();
+  }
+  // end reached or reached event where we should insert
+  task->setNext(curr_ev->getNext()); // event after the task might be NULL
+  curr_ev->setNext(task); // next event is now the task
+}
+
+/** sorts the tasks by date of execution at insertion
+ * the more recent the first */
+void TaskMgr::addTask(schedEvt *event){
+  schedEvt *curr_ev = evs_p;
+  schedEvt *prev_ev = evs_p;
+  bool twice = false;
+  
+  if (evs_p == NULL)
+    evs_p = event; // case 1: no root
+  else if (evs_p->getWhen() > event->getWhen()) { // case 2: younger than root
+    event->setNext(evs_p);
+    evs_p = event; // move root along
+  }
+  else { // case 3: general case
+    twice = (curr_ev == event);
+    while (curr_ev->getNext() != NULL){
+      if (curr_ev->getWhen() > event->getWhen())
+	break;
+      prev_ev = curr_ev;
+      curr_ev = curr_ev->getNext();
+      twice = (curr_ev == event);
+    }
+    if (!twice) // nothing inserted twice
+      insert_task(event,prev_ev);
+  }
+}
+
+/*
+void TaskMgr::printTasks(){
+  schedEvt *curr = evs_p;
+  while (curr!=NULL){
+    std::cout << "task date " << curr->getWhen() << '\n';
+    curr = curr->getNext();
+  }
+}
+*/
+
+void TaskMgr::execTasks(time_t utcnow){
+  schedEvt *curr_ev = this->evs_p;
+  schedEvt *prev_ev = curr_ev;
+
+  while (curr_ev != NULL){ // root may be NULL (no tasks left)
+    if (curr_ev->execAction(utcnow)){ // true == exec ok
+      if (curr_ev == this->evs_p){ // exec ok for root
+	this->evs_p = curr_ev->getNext(); // replace root by next or NULL
+	curr_ev = curr_ev->getNext(); // jump to next task
+	unlink_task(curr_ev); // remove old root
+      } else { // exec ok but not for root
+	prev_ev = curr_ev;
+	curr_ev = curr_ev->getNext(); // get next before removing
+	unlink_task(prev_ev); // remove task
+      }
+    }
+    // exec not ok
+  }
 }

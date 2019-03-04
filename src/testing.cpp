@@ -187,28 +187,13 @@ int main (void){
   bool sched_evt_ok = true;
   // chain feature
   schedEvt ev1, ev2, ev3;
-  int a = 5; // for non-linearity
+  TaskMgr tmgr;
+  int a = 5; // for non-linearity in memory space
   schedEvt ev4;
-  ev1.setNext(&ev2);
-  ev2.setNext(&ev3);
-  // before ev1 ev2 ev3 (remove MIDDLE)
-  ev2.unlink_myself(&ev1); // after ev1 ev3
-  if (ev1.getNext() != &ev3)
-    sched_evt_ok = false;
-  // before ev1 ev3 (remove LAST)
-  ev3.unlink_myself(&ev1); // after ev1
-  if (ev1.getNext() != NULL)
-    sched_evt_ok = false;
-  // before ev1
-  ev1.unlink_myself(&ev1); // after ev1 (testing corner-cases...)
-  if (ev1.getNext() != NULL) 
-    sched_evt_ok = false;
-  ev1.setNext(&ev2); // before ev1 ev2
-  ev1.unlink_myself(&ev1); // remove FIRST, after ev1
-  if (ev1.getNext() != NULL)
-    sched_evt_ok = false;
   // action exec feature
-  time_t tmgr_time_now = time(NULL);
+  time_t tmgr_time_now = ICDate::setFromICString("20181130T070000Z");
+  tmgr.execTasks(tmgr_time_now);  // testing empty chain
+  // testing task execution alone
   ev1.setWhen(tmgr_time_now);
   ev1.setAction(&emptyaction);
   if (ev1.execAction(tmgr_time_now - 10) == !false || /* trying to exec *before* */
@@ -218,12 +203,19 @@ int main (void){
   ev1.setWhen(tmgr_time_now-5L*60L); // 5 minutes before
   if (ev1.execAction(tmgr_time_now) != true) // should exec *again* because we changed time
     sched_evt_ok = false;
-  // now testing generic algorithm
-  ev1.setNext(&ev2); // ev1 is root
-  ev2.setNext(&ev3);
-  schedEvt *evptr = &ev1;
-  //  ev1.begin(&emptyaction,tmgr_time_now);
-  //  while ((evptr = evptr->getNext()) != NULL)
+  // now testing TaskMgr, adding exec dates to all tasks
+  ev1.setWhen(tmgr_time_now-4L*60L);
+  ev2.setWhen(tmgr_time_now-6L*60L);
+  ev3.setWhen(tmgr_time_now-14L*60L); // most recent
+  ev4.setWhen(tmgr_time_now+5L*60L);
+  tmgr.addTask(&ev4);
+  tmgr.addTask(&ev3);
+  tmgr.addTask(&ev2);
+  tmgr.addTask(&ev1);
+  tmgr.addTask(&ev4); // testing double insert, shouldn't work
+
+  // tmgr.execTasks(tmgr_time_now);
+  // tmgr.printTasks();
   
   if (sched_evt_ok)
     std::cout << "TaskMgr test passed\n";

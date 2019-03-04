@@ -22,15 +22,14 @@
  * Warning again: tasks will be executed once
  * and once only (one-shot).
  */
-// TODO: - move unlink_myself to TaskMgr
-//       - add insert method
+// TODO: - [x] move unlink_myself to TaskMgr
+//       - [x] add insert method
 //       - sort by date
 //       - autoclean (delete executed tasks)
 class schedEvt {
  public:
   schedEvt();
   void begin(time_t when, void (*actionPtr)(void)); // arduino-style
-  void unlink_myself(schedEvt *chainptr); // remove this from chain (chainptr)
   schedEvt *getNext();
   void setNext(schedEvt *); // if you want to disassociate, just pass NULL. But you should use unlink.
   void setAction(void (*actionPtr)(void));
@@ -47,12 +46,15 @@ class schedEvt {
 // should manage chain data
 class TaskMgr {
  public:
-  execTasks();
-  addTask(schedEvt *);
+  TaskMgr();
+  //void printTasks(void);
+  void execTasks(time_t utcnow); // don't forget to change root if 1st is removed
+  void addTask(schedEvt *);
+ protected:
+  void unlink_task(schedEvt *task);
+  void insert_task(schedEvt *task, schedEvt *where);
  private:
   schedEvt *evs_p; // pointer to the beginning of the chained list
-  unlinkTask(schedEvt *);
-  insertTask(schedEvt *);
 };
 
 #endif
