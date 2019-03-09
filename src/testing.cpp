@@ -11,6 +11,10 @@
 #include <iostream>
 char ICS_FILE[] = "example.ics";
 
+bool tmgr_noexec = false;
+int tmgr_execnum = 0;
+void checknoexec(void){tmgr_noexec = true;}
+void checkexec(void){tmgr_execnum++;}
 void emptyaction(void){}
 
 int main (void){
@@ -204,18 +208,25 @@ int main (void){
   if (ev1.execAction(tmgr_time_now) != true) // should exec *again* because we changed time
     sched_evt_ok = false;
   // now testing TaskMgr, adding exec dates to all tasks
-  ev1.setWhen(tmgr_time_now-4L*60L);
-  ev2.setWhen(tmgr_time_now-6L*60L);
-  ev3.setWhen(tmgr_time_now-14L*60L); // most recent
-  ev4.setWhen(tmgr_time_now+5L*60L);
-  tmgr.addTask(&ev4);
-  tmgr.addTask(&ev3);
-  tmgr.addTask(&ev2);
-  tmgr.addTask(&ev1);
-  tmgr.addTask(&ev4); // testing double insert, shouldn't work
+  ev1.setWhen(tmgr_time_now); // sametime 1
+  ev2.setWhen(tmgr_time_now-3*60); // will be executed (it's in the past)
+  ev3.setWhen(tmgr_time_now); // sametime 2
+  ev4.setWhen(tmgr_time_now+15*60); // should not exec, delta is 10 minutes
+  // adding empty actions to all tasks
+  ev1.setAction(&checkexec);
+  ev2.setAction(&checkexec);
+  ev3.setAction(&checkexec);
+  ev4.setAction(&checknoexec);
+  if (!(tmgr.addTask(&ev4) &&
+	tmgr.addTask(&ev3) &&
+	tmgr.addTask(&ev2) &&
+	tmgr.addTask(&ev1) &&
+	tmgr.addTask(&ev4) == false)) // testing double insert, shouldn't work
+    sched_evt_ok = false;
 
-  // tmgr.execTasks(tmgr_time_now);
-  // tmgr.printTasks();
+  tmgr.execTasks(tmgr_time_now);
+  if (tmgr_noexec == true || tmgr_execnum != 3) // 3 tasks should have exec
+    sched_evt_ok = false;
   
   if (sched_evt_ok)
     std::cout << "TaskMgr test passed\n";

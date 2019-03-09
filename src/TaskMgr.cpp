@@ -96,18 +96,18 @@ void TaskMgr::insert_task(schedEvt *task, schedEvt *where){
 
 /** sorts the tasks by date of execution at insertion
  * the more recent the first */
-void TaskMgr::addTask(schedEvt *event){
+bool TaskMgr::addTask(schedEvt *event){
   schedEvt *curr_ev = evs_p;
   schedEvt *prev_ev = evs_p;
   bool twice = false;
   
   if (evs_p == NULL)
     evs_p = event; // case 1: no root
-  else if (evs_p->getWhen() > event->getWhen()) { // case 2: younger than root
+  else if (evs_p->getWhen() > event->getWhen()) { // case 2: younger than root (in this case, no double insert)
     event->setNext(evs_p);
     evs_p = event; // move root along
   }
-  else { // case 3: general case
+  else { // case 3: general case. Double insert might happen
     twice = (curr_ev == event);
     while (curr_ev->getNext() != NULL){
       if (curr_ev->getWhen() > event->getWhen())
@@ -118,18 +118,12 @@ void TaskMgr::addTask(schedEvt *event){
     }
     if (!twice) // nothing inserted twice
       insert_task(event,prev_ev);
+    else
+      return false; // caller might want to know if add failed
   }
+  return true; // everything was OK. Inform the caller.
 }
 
-/*
-void TaskMgr::printTasks(){
-  schedEvt *curr = evs_p;
-  while (curr!=NULL){
-    std::cout << "task date " << curr->getWhen() << '\n';
-    curr = curr->getNext();
-  }
-}
-*/
 
 void TaskMgr::execTasks(time_t utcnow){
   schedEvt *curr_ev = this->evs_p;
@@ -137,16 +131,19 @@ void TaskMgr::execTasks(time_t utcnow){
 
   while (curr_ev != NULL){ // root may be NULL (no tasks left)
     if (curr_ev->execAction(utcnow)){ // true == exec ok
-      if (curr_ev == this->evs_p){ // exec ok for root
+      if (curr_ev == this->evs_p){ // special case: exec ok for root
 	this->evs_p = curr_ev->getNext(); // replace root by next or NULL
-	curr_ev = curr_ev->getNext(); // jump to next task
-	unlink_task(curr_ev); // remove old root
+	curr_ev->setNext(NULL); // dont't call unlink this time, because unlink relies on evs_p
+	curr_ev = evs_p; // jump to next event (root)
+	prev_ev = curr_ev; // reset prev_ev also
       } else { // exec ok but not for root
 	prev_ev = curr_ev;
-	curr_ev = curr_ev->getNext(); // get next before removing
-	unlink_task(prev_ev); // remove task
+	curr_ev = curr_ev->getNext(); // jump to next task (or NULL)
+	unlink_task(prev_ev); // remove old task from chain (unlink uses evs_p and it must not be null !)
       }
+    } else { // no exec, so just jump to next task
+      prev_ev = curr_ev;
+      curr_ev = curr_ev->getNext();
     }
-    // exec not ok
   }
 }

@@ -47,9 +47,8 @@ class schedEvt {
 class TaskMgr {
  public:
   TaskMgr();
-  //void printTasks(void);
   void execTasks(time_t utcnow); // don't forget to change root if 1st is removed
-  void addTask(schedEvt *);
+  bool addTask(schedEvt *);
  protected:
   void unlink_task(schedEvt *task);
   void insert_task(schedEvt *task, schedEvt *where);
