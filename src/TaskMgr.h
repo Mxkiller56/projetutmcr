@@ -15,17 +15,13 @@
 
 /** Event with scheduled action
  * can be used as a chained list of events
- * no sorting is done in terms of supposed event 
- * time of execution
  * Warning: only one chain can exist at a time
- * multiple chains aren't supported
+ * multiple chains (same schedEvts) aren't supported,
+ * unless you make another TaskMgr object and use
+ * others schedEvts
  * Warning again: tasks will be executed once
  * and once only (one-shot).
  */
-// TODO: - [x] move unlink_myself to TaskMgr
-//       - [x] add insert method
-//       - sort by date
-//       - autoclean (delete executed tasks)
 class schedEvt {
  public:
   schedEvt();

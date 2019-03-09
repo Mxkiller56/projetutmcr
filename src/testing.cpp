@@ -196,7 +196,7 @@ int main (void){
   schedEvt ev4;
   // action exec feature
   time_t tmgr_time_now = ICDate::setFromICString("20181130T070000Z");
-  tmgr.execTasks(tmgr_time_now);  // testing empty chain
+  tmgr.execTasks(tmgr_time_now);  // testing empty chain, shouldn't crash
   // testing task execution alone
   ev1.setWhen(tmgr_time_now);
   ev1.setAction(&emptyaction);
@@ -227,7 +227,11 @@ int main (void){
   tmgr.execTasks(tmgr_time_now);
   if (tmgr_noexec == true || tmgr_execnum != 3) // 3 tasks should have exec
     sched_evt_ok = false;
-  
+  tmgr_time_now += 16*60; // we're in the future now
+  ev4.setAction(&checkexec);
+  tmgr.execTasks(tmgr_time_now);
+  if (tmgr_execnum != 4) // the last task should have exec (testing root exec)
+    sched_evt_ok = false;
   if (sched_evt_ok)
     std::cout << "TaskMgr test passed\n";
   else
