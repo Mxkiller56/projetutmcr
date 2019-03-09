@@ -24,6 +24,8 @@ void showSlot(CourseSlot *);
 CourseSlot *getActiveSlot(void);
 void screeninfo(CourseSlot *);
 void ledinfo(CourseSlot *);
+void movestr(char *dest, char *src);
+int cleanstr(char *str, char def);
 
 /* global variables or consts */
 char onlineresource[] = "https://planning.univ-rennes1.fr/jsp/custom/modules/plannings/cal.jsp?data=8241fc3873200214080677ae6bf34798e0fa50826f0818af576889429f500664906f45af276f59ae8fac93f781e861526c6c7672adf13bbdf6273afaeb8260a8c2973627c2eb073b16351c4cc23ce65f8d3f4109b6629391";
@@ -47,6 +49,49 @@ const int lBlanche = 33;
 const int pDetect = 18;
 const int pBouton = 17;
 
+/** sort of asciiz memmove */
+void movestr(char *dest, char *src){
+  while (*dest != '\0' && *src != '\0') // check it's not the end
+    *(dest++) = *(src++);
+  // shrinking ("foobar" can become "fobar" but not "fobarr" !)
+  *(src-1) = '\0';
+}
+
+/** rewrites string str to fit in ascii char range */
+int cleanstr(char *str, char def){
+  int i,replaced=0;
+  struct replace {
+    const char *detect;
+    const char *replace;
+  };
+  struct replace replacements [] = {{"é","e"},
+				    {"è","e"},
+				    {"É","E"},
+				    {"à","a"},
+				    {"À","A"}};
+  while (*str != '\0'){
+    // trying to replace current char with known
+    // replacements
+    for (i=0; i<=c_array_len(replacements)-1; i++){
+      if (str == strstr(str,replacements[i].detect)){
+	*str = *(replacements[i].replace);
+	movestr(str+1,str+2); // the other byte is invalid then
+	replaced++;
+	break;
+      }
+    }
+    // char not in "ascii printable" (see man ascii)
+    // and has no known replacement, replace by default char
+    if (!(*str >= 0x20 && *str <= 0x7E)){
+	*str = def;
+	movestr(str+1,str+2); // same thing than before
+	replaced++;
+    }
+    str++;
+  }
+  return replaced;
+}
+
 /** affiche les informations du slot passé
     en paramètre sur l'écran LCD */
 void screeninfo(CourseSlot *slotinfo){
@@ -56,6 +101,8 @@ void screeninfo(CourseSlot *slotinfo){
 	     slotinfo->local_tm_end_min, ourlocation);
   lcd.setCursor(0,1); // next line
   if (slotinfo->getAssociatedVevent() != NULL){
+    // overwriting summary via cleanstr is OK (not critical data for our program)
+    cleanstr(slotinfo->getAssociatedVevent()->getSummary(),'?');
     lcd.print(slotinfo->getAssociatedVevent()->getSummary());
   }
   else {
