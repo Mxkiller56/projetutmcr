@@ -38,19 +38,51 @@ unsigned long millis (void){
     reference = clock();
   return clock() - reference;
 }
-
+void delay(unsigned long ms){ // 10^-3
+  // duration of the sleep in microseconds (10^-6)
+  usleep(ms*1000);
+}
 void pinMode(int pinNumber, int mode){/* dummy */}
 void digitalWrite(int pinNumber, int state){/* dummy */}
-int digitalRead(int pinNumber){/* dummy, might be extended ? */}
+int digitalRead(int pinNumber){
+  int a = 1; // might be modified in debugger at run-time
+  return a; // always active (for testing purposes)
+}
 bool _802_1x_eap_connect(char *ssid, char *identity, char *password){
    /* in the magical world of networked software, wifi _always_ work
       ;) */ 
   WiFi::begin("SSID");
   return true;
 }
-
+void esp_deep_sleep(long long us_time){
+  std::cout << "deepsleeping for " << us_time << " microseconds";
+  exit(0);
+}
 
 /* class methods */
+void fESP::restart(void){
+  std::cout << "asked to reboot, exiting";
+  exit(0);
+}
+Preferences::Preferences(){
+  // only a small set of keys are defined
+  kvs[0] = {"salle","Salle Télécom. 1"};
+}
+bool Preferences::begin(const char *name, bool readOnly){/* dummy for now */}  
+size_t Preferences::putString(const char *key, const char *value){ /* dummy */}
+size_t Preferences::getString(const char *key, char *value, size_t maxlen){
+  int i,j;
+  for (i=0; i<=sizeof(kvs)/sizeof(kvs[0])-1; i++){
+    if (strcmp(kvs[i].key,key) == 0)
+      for (j=0; kvs[i].val[j] != '\0' && j <= maxlen; j++)
+	value[j] = kvs[i].val[j]; // copy until maxlen or end
+  }
+}
+
+void WebServer2::begin(Preferences *preferences){}
+void WebServer2::blocking_run(void){for(;;){/* it never returns */}}
+
+
 bool WiFi::disconnect(bool disco){/* french pun :)*/
   return true;
 }
@@ -99,6 +131,8 @@ void LiquidCrystal_I2C::backlight(){bl_on=true;}
 void LiquidCrystal_I2C::noBacklight(){bl_on=false;}
 bool LiquidCrystal_I2C::getBacklight(){return bl_on;}
 void LiquidCrystal_I2C::setCursor(int x, int y){}
+void LiquidCrystal_I2C::scrollDisplayLeft(){}
+void LiquidCrystal_I2C::scrollDisplayRight(){}
 
 size_t Client::available(void){
   return _connected;
@@ -138,3 +172,4 @@ uint8_t WiFiClient::connected(void){
 
 /* global variables */
 fSerial Serial;
+fESP ESP;
