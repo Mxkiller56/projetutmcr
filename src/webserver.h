@@ -7,10 +7,10 @@
 
 class WebServer2{
 public:
-	void begin(void);
+	void begin(Preferences *preferences);
 	void blocking_run(void);
 private:
-  Preferences preferences;
+	Preferences *preferences;
 	WiFiServer server;
 	String header;
 	String salle;

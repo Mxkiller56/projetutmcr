@@ -1,10 +1,10 @@
 #include "webserver.h"
 
-void WebServer2::begin(void){
-    server = WiFiServer(80);
-		server.begin();
-    preferences.begin("my-app", false);
-	}
+void WebServer2::begin(Preferences *preferences){
+  server = WiFiServer(80);
+  server.begin();
+  this->preferences = preferences;
+}
  
 void WebServer2::blocking_run(void){
 		while (true){
@@ -32,71 +32,71 @@ void WebServer2::blocking_run(void){
 		            if (header.indexOf("GET /td1") >= 0) {
 		              Serial.println("td1 selected");
 		              salle="TD1";
-		              preferences.putString("salle", salle);
-		              delay(200);
+		              preferences->putString("salle", salle);
+		              delay(200); ESP.restart();
 		            } else if (header.indexOf("GET /td2") >= 0) {
 		              Serial.println("td2 selected");
 		              salle="TD2";
-		              preferences.putString("salle", salle);
+		              preferences->putString("salle", salle);
 		              delay(200); ESP.restart();
 		            } else if (header.indexOf("GET /td3") >= 0) {
 		              Serial.println("td3 selected");
 		              salle="TD3";
-		              preferences.putString("salle", salle);
+		              preferences->putString("salle", salle);
 		              delay(200); ESP.restart();
 		            } else if (header.indexOf("GET /td4") >= 0) {
 		              Serial.println("td4 selected");
 		              salle="TD4";
-		              preferences.putString("salle", salle);
+		              preferences->putString("salle", salle);
 		              delay(200); ESP.restart();
 		            } else if (header.indexOf("GET /td5") >= 0) {
 		              Serial.println("td5 selected");
 		              salle="TD5";
-		              preferences.putString("salle", salle);
+		              preferences->putString("salle", salle);
 		              delay(200); ESP.restart();
 		            } else if (header.indexOf("GET /td6") >= 0) {
 		              Serial.println("td6 selected");
 		              salle="TD6";
-		              preferences.putString("salle", salle);
+		              preferences->putString("salle", salle);
 		              delay(200); ESP.restart();
 		            } else if (header.indexOf("GET /td7") >= 0) {
 		              Serial.println("td7 selected");
 		              salle="TD7";
-		              preferences.putString("salle", salle);
+		              preferences->putString("salle", salle);
 		              delay(200); ESP.restart();
 		            } else if (header.indexOf("GET /reseau1") >= 0) {
 		              Serial.println("réseau 1 selected");
 		              salle="Salle Réseaux 1";
-		              preferences.putString("salle", salle);
+		              preferences->putString("salle", salle);
 		              delay(200); ESP.restart();
 		            } else if (header.indexOf("GET /reseau2") >= 0) {
 		              Serial.println("réseau 2 selected");
 		              salle="Salle Réseaux 2";
-		              preferences.putString("salle", salle);
+		              preferences->putString("salle", salle);
 		              delay(200); ESP.restart();
 		            } else if (header.indexOf("GET /reseau3") >= 0) {
 		              Serial.println("réseau 3 selected");
 		              salle="Salle Réseaux 3";
-		              preferences.putString("salle", salle);
+		              preferences->putString("salle", salle);
 		            } else if (header.indexOf("GET /info1") >= 0) {
 		              Serial.println("Salle info 1 selected");
 		              salle="Salle Info. 1";
-		              preferences.putString("salle", salle);
+		              preferences->putString("salle", salle);
 		              delay(200); ESP.restart();
 		            } else if (header.indexOf("GET /info2") >= 0) {
 		              Serial.println("Salle info 2 selected");
 		              salle="Salle Info. 2";
-		              preferences.putString("salle", salle);
+		              preferences->putString("salle", salle);
 		              delay(200); ESP.restart();
 		            } else if (header.indexOf("GET /elec1") >= 0) {
 		              Serial.println("Elec 1 selected");
 		              salle="Salle Elec. 1";
-		              preferences.putString("salle", salle);
+		              preferences->putString("salle", salle);
 		              delay(200); ESP.restart();
 		            } else if (header.indexOf("GET /text") >= 0) {
 		              
 		            }
-               salle2 = preferences.getString("salle","0");
+               salle2 = preferences->getString("salle","0");
                 Serial.println(salle2);
 		            // Display the HTML web page
 		            client.println("<!DOCTYPE html><html>");
@@ -111,7 +111,7 @@ void WebServer2::blocking_run(void){
 		            Serial.println();
 		            // Web Page Heading
 		            client.println("<body><h1>MyConnectedRoom</h1>");
-                client.println("<h1>Salle sélectionnée : "+preferences.getString("salle","aucune")+"</h1>");
+                client.println("<h1>Salle sélectionnée : "+preferences->getString("salle","aucune")+"</h1>");
 		            client.println("<p><a onclick=\"return confirm('Reboot for TD1 ?')\" href=\"/td1\"><button class=\"button\">TD1</button></a></p>");
 		            client.println("<p><a onclick=\"return confirm('Reboot for TD2 ?')\"href=\"/td2\"><button class=\"button\">TD2</button></a></p>");
 		            client.println("  <p><a onclick=\"return confirm('Reboot for TD3 ?')\" href=\"/td3\"><button class=\"button\">TD3</button></a></p>");
