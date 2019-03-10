@@ -3,15 +3,22 @@
 #include "co2Eduroam.h"
 #include <Wire.h> 
 #include <LiquidCrystal_I2C.h>
+#include "webserver.h"
+#include "esp_sleep.h"
 #else
 #include "Arduino_testing.h"
 #endif
+#include "TaskMgr.h"
 #include "secrets.h"
 #include "CalConnector.h"
 #include "ICalendarParser.h"
 #include "LedsMng.h"
 
 /* functions prototypes */
+void checkPresence(void);
+void scheduleTasks(void);
+void deepsleep_s(void);
+void reboot(void);
 void wifico(void);
 void e_wifico(void);
 void get_time(void);
@@ -29,8 +36,8 @@ int cleanstr(char *str, char def);
 
 /* global variables or consts */
 char onlineresource[] = "https://planning.univ-rennes1.fr/jsp/custom/modules/plannings/cal.jsp?data=8241fc3873200214080677ae6bf34798e0fa50826f0818af576889429f500664906f45af276f59ae8fac93f781e861526c6c7672adf13bbdf6273afaeb8260a8c2973627c2eb073b16351c4cc23ce65f8d3f4109b6629391";
-// TODO: use Preferences API for location
-char ourlocation[] = "Salle Télécom. 1";
+Preferences pref; // Preferences API object
+char ourlocation[25] = "TD1"; // default location. Location size is 25 chars max (overwritten by preferences)
 ICVevent mcr_icvevs[8];
 int n_events_today=0;
 CourseSlot mcr_slots[] = {
@@ -39,6 +46,17 @@ CourseSlot mcr_slots[] = {
   CourseSlot(13,45,  15,45, 1),
   CourseSlot(16,0,   18,0,  1)
 };
+unsigned int btn_presses = 0;
+long int remaining_show_ms = 0; // miliseconds remaining to display
+long int show_start_ms = 0; // when we started to display
+TaskMgr tmgr; // our task manager
+// refreshes are called at the beginning of each time slot
+schedEvt refreshes[c_array_len(mcr_slots)],
+  scans5[c_array_len(mcr_slots)],
+  scans10[c_array_len(mcr_slots)],
+  scans30[c_array_len(mcr_slots)],
+  last_sleep; // deepsleep from older CourseSlot stop until the morning, and you'll be freshly reset
+int deepsleep_duration = 0; // global variable again, I'm sorry
 // trucs "physiques"
 LiquidCrystal_I2C lcd(0x27,16,2);  // déclaration d'un écran LCD de 16x2 caractères avec l'adresse 0x27 sur le bus i2c
 const int lVerte = 27;
@@ -48,6 +66,10 @@ const int lBlanche = 33;
 // TODO à changer
 const int pDetect = 18;
 const int pBouton = 17;
+
+void reboot(void){
+  ESP.restart();
+}
 
 /** sort of asciiz memmove */
 void movestr(char *dest, char *src){
@@ -163,6 +185,9 @@ void setup() {
   lcd.init();
   lcd.backlight();
   lcd.print("MCR now booting");
+  /* initialisation de l'API preferences */
+  pref.begin("my-app", false);
+  pref.getString("salle", ourlocation, c_array_len(ourlocation)); // may warn if "salle" not initalised. Using default val then.
   /* connexion à eduroam */
   wifico();
   /* paramétrage serveur de temps et offset */
@@ -171,23 +196,109 @@ void setup() {
   get_time();
   /* récupération et parsing du fichier iCalendar */
   get_ics();
-  /* affichage du slot actif */
+  /* programmation des tâches à venir */
+  scheduleTasks();
+  /* afficher le slot en cours */
   showSlot();
 }
 
 void loop() {
-  //  showSlot();
+  // exec tasks first
+  struct tm tm_loop_now = {};
+  get_time(&tm_loop_now);
+  tmgr.execTasks(mktime(&tm_loop_now));
+  // button has been pressed
+  // remaining seconds showing are decreasing
+  // scroll display every 250ms
+  // button has been pressed again
+  // loop in slots
+  if (digitalRead(pBouton) && remaining_show_ms <= 0){
+    remaining_show_ms = 250*100;
+    show_start_ms = millis();
+    showSlot(); // show current slot
+  }
+  else if (digitalRead(pBouton) && remaining_show_ms > 0) {
+    // change displayed slot
+    showSlot(&(mcr_slots[btn_presses % c_array_len(mcr_slots)]));
+    btn_presses++;
+  } else if (!digitalRead(pBouton) && remaining_show_ms > 0){
+    // scroll display
+    lcd.scrollDisplayLeft();
+    remaining_show_ms -= millis() - show_start_ms;
+  }
+}
+
+void deepsleep_s(void){
+  Serial.printf("[debug] entering in deep sleep for %d seconds", deepsleep_duration);
+  // TODO: DISABLE ALL RADIOS !
+  esp_deep_sleep(1000000LL * deepsleep_duration);
+}
+
+void checkPresence(void){
+  // TODO
+  showSlot();
+}
+
+/** schedules and inserts the tasks that the object will
+ * have to execute */
+void scheduleTasks(void){
+  struct tm utcnow;
+  get_time(&utcnow);
+  time_t utcnow_t = mktime(&utcnow);
+  struct tm tm_prev_midnight = utcnow;
+  tm_prev_midnight.tm_sec = 0;
+  tm_prev_midnight.tm_min = 0;
+  tm_prev_midnight.tm_hour = 0;
+  time_t prev_midnight = mktime(&tm_prev_midnight);
+  time_t next_midnight = prev_midnight + 24*SECS_PER_HOUR;
+  time_t last_slot_end = utcnow_t;
+  time_t first_slot_beg = next_midnight + 24*SECS_PER_HOUR;
+  
+  // setting presence check dates and refreshes, find the oldest slot
+  for (int slot=0; slot<=c_array_len(mcr_slots)-1; slot++){
+    // don't schedule something in the past, would be useless
+    if (mcr_slots[slot].beg2UTC(&utcnow) > utcnow_t){
+      refreshes[slot].setWhen(mcr_slots[slot].beg2UTC(&utcnow)+1);
+      refreshes[slot].setAction(&showSlot); // show slot 1 second after changing
+      scans5[slot].setWhen(mcr_slots[slot].beg2UTC(&utcnow) + 60*5);
+      scans5[slot].setAction(&checkPresence); // 5 minutes after beg
+      scans10[slot].setWhen(mcr_slots[slot].beg2UTC(&utcnow) + 60*10);
+      scans10[slot].setAction(&checkPresence); // 10 minutes after beg
+      scans30[slot].setWhen(mcr_slots[slot].beg2UTC(&utcnow) + 60*30);
+      scans30[slot].setAction(&checkPresence); // 30 minutes after beg
+      // adding tasks to the task scheduler
+      tmgr.addTask(&refreshes[slot]);
+      tmgr.addTask(&scans5[slot]);
+      tmgr.addTask(&scans10[slot]);
+      tmgr.addTask(&scans30[slot]);
+    }
+    if (last_slot_end < mcr_slots[slot].end2UTC(&utcnow))
+      last_slot_end = mcr_slots[slot].end2UTC(&utcnow); // we found something older
+    if (first_slot_beg > mcr_slots[slot].beg2UTC(&utcnow) + 24*SECS_PER_HOUR) // searching first slot beginning tomorrow
+      first_slot_beg = mcr_slots[slot].beg2UTC(&utcnow) + 24*SECS_PER_HOUR;
+  }
+  /* then set last sleep (sleeping from oldest courseslot today
+   * to first courseslot tomorrow) */
+  deepsleep_duration = next_midnight - last_slot_end + first_slot_beg - next_midnight;
+  Serial.printf("[debug] will deepsleep when reaching %d, for %d seconds",last_slot_end+1, deepsleep_duration);
+  // enter in deep sleep at the end of the last slot
+  last_sleep.setWhen(last_slot_end + 1);
+  last_sleep.setAction(&deepsleep_s);
+  tmgr.addTask(&last_sleep);
 }
 
 void settings_mode (){
-  // dummy for now
+  WebServer2 ws;
+  ws.begin(&pref);
+  ws.blocking_run();
 }
 
 void e_wifico(){
   lcd.clear();
   Serial.println("[debug] failed to connect to WiFi");
   lcd.print("WiFi error !");
-  for(;;){} // TODO change behaviour (AP mode ?)
+  delay(2000);
+  reboot();
 }
 
 void wifico (){
@@ -201,7 +312,8 @@ void wifico (){
 void e_get_time(){
   lcd.clear();
   lcd.print("NTP/time error !");
-  for(;;){} // TODO change behaviour (config mode ?)
+  delay(2000);
+  reboot();
 }
 
 /** tests if we can obtain time with NTP */
@@ -226,6 +338,8 @@ void get_time(struct tm *tmi){
 void e_get_ics(int ecode){
   lcd.clear();
   lcd.printf("HTTP error %d",ecode);
+  delay(2000);
+  reboot();
 }
 
 bool get_ics(){

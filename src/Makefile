@@ -1,7 +1,7 @@
 # objects for target "test"
 TESTOBJS = ICalendarParser.o util.o Arduino_testing.o CalConnector.o testing.o LedsMng.o TaskMgr.o
 # objects for target "simrun"
-SIMOBJS = ICalendarParser.o util.o Arduino_testing.o CalConnector.o main.o LedsMng.o simrun.o
+SIMOBJS = ICalendarParser.o util.o Arduino_testing.o CalConnector.o main.o LedsMng.o simrun.o TaskMgr.o
 CC   = g++
 CPPFLAGS = -DTESTING -DFOREVERTODAY
 # if you don't want to run demos, comment this out
