@@ -16,7 +16,8 @@
 #include "Client.h"
 #endif
 
-#define c_array_len(array) sizeof(array)/sizeof(array[0])
+// force priority, we never know how this macro can be used
+#define c_array_len(array) (sizeof(array)/sizeof(array[0]))
 // this breaks readNextLine(). Investigate.
 // doesn't break if defined to 256
 // strange break on 235
