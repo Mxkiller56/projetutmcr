@@ -10,7 +10,7 @@ bool is_in_date_range (ICVevent *event, time_t beg, time_t end){
   else
     return false;
 }
-/** if a vevent is over a date range
+/*
     Examples returning true:
 1  | vevent duration ... |
         | date range |
@@ -22,7 +22,7 @@ bool is_in_date_range (ICVevent *event, time_t beg, time_t end){
                | date range |
 4  | date range .......   |
      | vevent duration |
-*/	     
+*/
 bool over_date_range(ICVevent *event, time_t beg, time_t end){
   // assuming that event->getDtstart() < event->getDtend()
   if ((event->getDtstart() <= beg && event->getDtend() <= beg) || // all the event is before beg
@@ -31,7 +31,7 @@ bool over_date_range(ICVevent *event, time_t beg, time_t end){
   else
     return true; // else it's overlapping beg or end
 }
-/* if a vevent is in a location */
+
 bool is_in_location (ICVevent *event, char *location){
   /* we found the searched location in the event */
   if (strstr(event->getLocation(), location) != NULL)

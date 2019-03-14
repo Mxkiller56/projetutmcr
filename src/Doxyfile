@@ -1,0 +1,16 @@
+# -*- mode: conf; -*-
+DOXYFILE_ENCODING      = UTF-8
+PROJECT_NAME           = "My Connected Room"
+PROJECT_BRIEF          = "Room state display IoT firmware, compatible with ESP32 and ICalendar"
+OUTPUT_DIRECTORY       = ../doc
+# uncomment this one to have the documentation in french
+# OUTPUT_LANGUAGE        = French
+FULL_PATH_NAMES        = NO
+# maps file extension to language
+EXTENSION_MAPPING      = "ino=C++"
+GENERATE_LATEX         = NO
+GENERATE_HTML          = YES
+# generate documentation for undocumented
+EXTRACT_ALL            = YES
+# automatically extract briefs from javadoc-style comments
+JAVADOC_AUTOBRIEF      = YES

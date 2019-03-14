@@ -14,7 +14,13 @@
 #include "ICalendarParser.h"
 #include "LedsMng.h"
 
-/* functions prototypes */
+/**
+ * Main program.
+ * Contains global variables and other functions specific
+ * to the project itself (non-reusable code).
+ */
+
+// functions prototypes
 void checkPresence(void);
 void scheduleTasks(void);
 void deepsleep_s(void);
@@ -34,29 +40,30 @@ void ledinfo(CourseSlot *);
 void movestr(char *dest, char *src);
 int cleanstr(char *str, char def);
 
-/* global variables or consts */
-char onlineresource[] = "https://planning.univ-rennes1.fr/jsp/custom/modules/plannings/cal.jsp?data=8241fc3873200214080677ae6bf34798e0fa50826f0818af576889429f500664906f45af276f59ae8fac93f781e861526c6c7672adf13bbdf6273afaeb8260a8c2973627c2eb073b16351c4cc23ce65f8d3f4109b6629391";
-Preferences pref; // Preferences API object
-char ourlocation[25] = "TD1"; // default location. Location size is 25 chars max (overwritten by preferences)
-ICVevent mcr_icvevs[8];
+// global variables or consts
+char onlineresource[] = "https://planning.univ-rennes1.fr/jsp/custom/modules/plannings/cal.jsp?data=8241fc3873200214080677ae6bf34798e0fa50826f0818af576889429f500664906f45af276f59ae8fac93f781e861526c6c7672adf13bbdf6273afaeb8260a8c2973627c2eb073b16351c4cc23ce65f8d3f4109b6629391"; /**< URL where the iCalendar file should be retrieved. */
+Preferences pref; /**< Preferences API object used in all the main program */
+char ourlocation[25] = "TD1"; /**< default location. Location size is
+				 25 chars max (overwritten when
+				 retrieved from  preferences) */
+ICVevent mcr_icvevs[8]; /**< online events that can be stored locally */
 int n_events_today=0;
-CourseSlot mcr_slots[] = {
-  CourseSlot(8,0,    10,0,  1), // our "timezone" is UTC+1hour
+CourseSlot mcr_slots[] = { /**< CourseSlots today. Our timezone is UTC+1h */
+  CourseSlot(8,0,    10,0,  1),
   CourseSlot(10,15,  12,15, 1), 
   CourseSlot(13,45,  15,45, 1),
   CourseSlot(16,0,   18,0,  1)
 };
 unsigned int btn_presses = 0;
-long int remaining_show_ms = 0; // miliseconds remaining to display
+long int remaining_show_ms = 0; /**< miliseconds remaining to display */
 long int show_start_ms = 0; // when we started to display
 TaskMgr tmgr; // our task manager
-// refreshes are called at the beginning of each time slot
-schedEvt refreshes[c_array_len(mcr_slots)],
+schedEvt refreshes[c_array_len(mcr_slots)], /**< refreshes are called at the beginning of each time slot */
   scans5[c_array_len(mcr_slots)],
   scans10[c_array_len(mcr_slots)],
   scans30[c_array_len(mcr_slots)],
-  last_sleep; // deepsleep from older CourseSlot stop until the morning, and you'll be freshly reset
-int deepsleep_duration = 0; // global variable again, I'm sorry
+  last_sleep; /**< deepsleep from older CourseSlot stop until the morning, and you'll be freshly reset */
+int deepsleep_duration = 0;
 // trucs "physiques"
 LiquidCrystal_I2C lcd(0x27,16,2);  // déclaration d'un écran LCD de 16x2 caractères avec l'adresse 0x27 sur le bus i2c
 const int lVerte = 27;
@@ -71,7 +78,10 @@ void reboot(void){
   ESP.restart();
 }
 
-/** sort of asciiz memmove */
+/** sort of asciiz memmove.
+ * @param dest where should src be moved
+ * @param src where to start to copy from
+ */
 void movestr(char *dest, char *src){
   while (*dest != '\0' && *src != '\0') // check it's not the end
     *(dest++) = *(src++);
@@ -79,7 +89,11 @@ void movestr(char *dest, char *src){
   *(src-1) = '\0';
 }
 
-/** rewrites string str to fit in ascii char range */
+/** rewrites string str to fit in ascii char range.
+ * @param str asciiz string to rewrite
+ * @param def default replacement character
+ * @return the number of characters replaced
+ */
 int cleanstr(char *str, char def){
   int i,replaced=0;
   struct replace {
@@ -114,8 +128,11 @@ int cleanstr(char *str, char def){
   return replaced;
 }
 
-/** affiche les informations du slot passé
-    en paramètre sur l'écran LCD */
+/** Prints information on the LCD screen.
+ * Information contained in slotinfo will be displayed. If slotinfo
+ * has a Vevent associated, Vevent summary will also be shown.
+ * @param slotinfo the slot that contains information you want to show.
+ */
 void screeninfo(CourseSlot *slotinfo){
   lcd.clear();
   lcd.printf("%d:%d-%d:%d, %s",slotinfo->local_tm_begin_hour,
@@ -132,8 +149,7 @@ void screeninfo(CourseSlot *slotinfo){
     lcd.print("Pas de cours");
   }
 }
-/** change l'état des leds en fonction
-    du courseslot passé en paramètre */
+/** Changes the state of LEDs according to slotinfo.*/
 void ledinfo(CourseSlot *slotinfo){
   LedColor lcolor = slotinfo->whichColor();
   struct tm utcnow;
@@ -164,7 +180,9 @@ void ledinfo(CourseSlot *slotinfo){
   }
 }
 
-// exécuté une fois au démarrage
+/** runned once when the program starts.
+ * initializes hardware etc.
+ */
 void setup() {
   Serial.begin(115200);
   Serial.println("[debug] MCR now booting");
@@ -202,6 +220,7 @@ void setup() {
   showSlot();
 }
 
+/** executed indefinitely after setup */
 void loop() {
   // exec tasks first
   struct tm tm_loop_now = {};
@@ -287,12 +306,14 @@ void scheduleTasks(void){
   tmgr.addTask(&last_sleep);
 }
 
+/** when called, makes the object enter setting mode */
 void settings_mode (){
   WebServer2 ws;
   ws.begin(&pref);
   ws.blocking_run();
 }
 
+/** called upon WiFi error */
 void e_wifico(){
   lcd.clear();
   Serial.println("[debug] failed to connect to WiFi");
@@ -301,6 +322,7 @@ void e_wifico(){
   reboot();
 }
 
+/** initializes the wifi connection, uses eduroam. */
 void wifico (){
   // ces constantes sont dans secret.h
   if(!_802_1x_eap_connect(_MCR_SSID, _MCR_EAP_IDENTITY, _MCR_EAP_PASSWORD))
@@ -309,6 +331,7 @@ void wifico (){
     return; // tout s'est bien passé, nous sommes connectés
 }
 
+/** called upon NTP error */
 void e_get_time(){
   lcd.clear();
   lcd.print("NTP/time error !");
@@ -322,8 +345,10 @@ void get_time (){
   get_time(&test);
 }
 
-/** get time by modifying tmi
-    main.ino funs should use this
+/** Get time by modifying tmi.
+ * Should be used by other functions whenever they need to obtain
+ * current time.
+ * @param tmi will be modified by the function to reflect current date and time
  */
 void get_time(struct tm *tmi){
   if(!getLocalTime(tmi)){
@@ -335,6 +360,7 @@ void get_time(struct tm *tmi){
   }
 }
 
+/**  called if the iCalendar retriever has encountered an HTTP error */
 void e_get_ics(int ecode){
   lcd.clear();
   lcd.printf("HTTP error %d",ecode);
@@ -342,6 +368,14 @@ void e_get_ics(int ecode){
   reboot();
 }
 
+/** Get the iCalendar file.
+ * Get the iCalendar events and memorizes only those for
+ * today (between previous midnight and next midnight), and for our
+ * location (LOCATION iCalendar property). CourseSlots are then
+ * associated to retrieved Vevents.
+ * @see onlineresource
+ * @see ourlocation
+ */
 bool get_ics(){
   struct tm tm_prev_midnight = {};
   time_t prev_midnight;
@@ -370,16 +404,23 @@ bool get_ics(){
   }
 }
 
+/** Displays cslot information. */
 void showSlot(CourseSlot *cslot){
   screeninfo(cslot);
   ledinfo(cslot);
 }
-
+/** Displays the currently active slot
+ * @see getActiveSlot
+ */
 void showSlot(void){
   if (getActiveSlot() != NULL)
     showSlot(getActiveSlot());
 }
 
+/** Returns the currently active slot.
+ * @return pointer to the currently active slot or NULL if none is
+ *         active at the moment.
+ */
 CourseSlot *getActiveSlot(void){
   struct tm utcnow;
   get_time(&utcnow);
