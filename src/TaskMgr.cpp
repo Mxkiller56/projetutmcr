@@ -33,12 +33,12 @@ void schedEvt::setNext(schedEvt *evt){
 bool schedEvt::execAction(time_t utcnow){
   // 1. check if actionPtr is not null 2. check if time has come to exec, or if (+-)delta is not too important
   if (this->actionPtr != NULL &&
-      // we're after event start minus negative delta
-      utcnow - NEG_DELTA >= this->getWhen() && 
+      // pos delta OK
+      utcnow - getWhen() <= NEG_DELTA &&
+      // neg delta OK
+      getWhen() - utcnow <= POS_DELTA &&
       // action not executed
-      this->last_exec == NEVER &&
-      // delta is not too important
-      this->getWhen() <= utcnow + POS_DELTA){
+      this->last_exec == NEVER){
     // ok, we can call exec action
     (*this->actionPtr)();
     this->last_exec = utcnow; // don't forget to set last_exec time

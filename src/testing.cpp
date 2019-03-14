@@ -209,9 +209,9 @@ int main (void){
     sched_evt_ok = false;
   // now testing TaskMgr, adding exec dates to all tasks
   ev1.setWhen(tmgr_time_now); // sametime 1
-  ev2.setWhen(tmgr_time_now-3*60); // will be executed (it's in the past)
-  ev3.setWhen(tmgr_time_now); // sametime 2
-  ev4.setWhen(tmgr_time_now+15*60); // should not exec, delta is 10 minutes
+  ev2.setWhen(tmgr_time_now-8*60); // will be executed (it's in the past delta inf 10m)
+  ev3.setWhen(tmgr_time_now-12*60); // should not exec (too late)
+  ev4.setWhen(tmgr_time_now+23*60); // should not exec, it's in the future
   // adding empty actions to all tasks
   ev1.setAction(&checkexec);
   ev2.setAction(&checkexec);
@@ -225,12 +225,12 @@ int main (void){
     sched_evt_ok = false;
 
   tmgr.execTasks(tmgr_time_now);
-  if (tmgr_noexec == true || tmgr_execnum != 3) // 3 tasks should have exec
+  if (tmgr_noexec == true || tmgr_execnum != 2) // 2 tasks should have exec
     sched_evt_ok = false;
-  tmgr_time_now += 16*60; // we're in the future now
+  tmgr_time_now += 25*60; // we're in the future now
   ev4.setAction(&checkexec);
   tmgr.execTasks(tmgr_time_now);
-  if (tmgr_execnum != 4) // the last task should have exec (testing root exec)
+  if (tmgr_execnum != 3) // the last task should have exec (testing root exec)
     sched_evt_ok = false;
   if (sched_evt_ok)
     std::cout << "TaskMgr test passed\n";

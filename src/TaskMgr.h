@@ -7,9 +7,9 @@
 // action must be executed *after* the time set
 // but you can exec it a little bit before if you wish,
 // by modifying this variable
-#define NEG_DELTA (0L)
-// 10 minutes
-#define POS_DELTA (600L)
+#define POS_DELTA (0L)
+// action can be executed 10 minutes after it beginnig, maximum
+#define NEG_DELTA (600L)
 
 /** Scheduler for tasks */
 
