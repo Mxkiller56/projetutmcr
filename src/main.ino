@@ -35,7 +35,7 @@ void movestr(char *dest, char *src);
 int cleanstr(char *str, char def);
 
 /* global variables or consts */
-char onlineresource[] = "https://planning.univ-rennes1.fr/jsp/custom/modules/plannings/cal.jsp?data=8241fc3873200214080677ae6bf34798e0fa50826f0818af576889429f500664906f45af276f59ae8fac93f781e861526c6c7672adf13bbdf6273afaeb8260a8c2973627c2eb073b16351c4cc23ce65f8d3f4109b6629391";
+char onlineresource[] = "https://planning.univ-rennes1.fr/jsp/custom/modules/plannings/cal.jsp?data=8241fc387320021400327640b0ac6307e0fa50826f0818afd07cb68a5f59ac56906f45af276f59ae8fac93f781e86152b71afa816f3244e1f6273afaeb8260a8c2973627c2eb073bd4ec119d48c70c7f8d3f4109b6629391";
 Preferences pref; // Preferences API object
 char ourlocation[25] = "TD1"; // default location. Location size is 25 chars max (overwritten by preferences)
 ICVevent mcr_icvevs[8];
