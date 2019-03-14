@@ -4,7 +4,9 @@
 #include <Wire.h> 
 #include <LiquidCrystal_I2C.h>
 #include "webserver.h"
-#include "esp_sleep.h"
+#include <esp_sleep.h>
+#include <esp_wifi.h>
+#include <Preferences.h>
 #else
 #include "Arduino_testing.h"
 #endif
@@ -46,7 +48,9 @@ CourseSlot mcr_slots[] = {
   CourseSlot(13,45,  15,45, 1),
   CourseSlot(16,0,   18,0,  1)
 };
+struct tm tm_loop_now = {}; // time struct used in loop
 unsigned int btn_presses = 0;
+long int last_scroll = 0; // last scroll was done x miliseconds ago
 long int remaining_show_ms = 0; // miliseconds remaining to display
 long int show_start_ms = 0; // when we started to display
 TaskMgr tmgr; // our task manager
@@ -188,6 +192,7 @@ void setup() {
   /* initialisation de l'API preferences */
   pref.begin("my-app", false);
   pref.getString("salle", ourlocation, c_array_len(ourlocation)); // may warn if "salle" not initalised. Using default val then.
+  Serial.printf("[debug] ourlocation: %s\n",ourlocation);
   /* connexion à eduroam */
   wifico();
   /* paramétrage serveur de temps et offset */
@@ -195,7 +200,13 @@ void setup() {
   /* récupération du temps */
   get_time();
   /* récupération et parsing du fichier iCalendar */
+  lcd.setCursor(0,1);
+  lcd.print("Getting ICS");
   get_ics();
+  /* extinction du WiFi */
+  if(esp_wifi_stop() == ESP_OK){
+    Serial.println("[debug] wifi stopped");
+  }
   /* programmation des tâches à venir */
   scheduleTasks();
   /* afficher le slot en cours */
@@ -204,7 +215,6 @@ void setup() {
 
 void loop() {
   // exec tasks first
-  struct tm tm_loop_now = {};
   get_time(&tm_loop_now);
   tmgr.execTasks(mktime(&tm_loop_now));
   // button has been pressed
@@ -216,16 +226,21 @@ void loop() {
     remaining_show_ms = 250*100;
     show_start_ms = millis();
     showSlot(); // show current slot
+    delay(250);
   }
   else if (digitalRead(pBouton) && remaining_show_ms > 0) {
     // change displayed slot
     showSlot(&(mcr_slots[btn_presses % c_array_len(mcr_slots)]));
     btn_presses++;
+    delay(250);
   } else if (!digitalRead(pBouton) && remaining_show_ms > 0){
-    // scroll display
-    lcd.scrollDisplayLeft();
-    remaining_show_ms -= millis() - show_start_ms;
+    remaining_show_ms = millis() - show_start_ms;
   }
+  if (millis() - last_scroll > 250){
+    last_scroll = millis();
+    lcd.scrollDisplayLeft();
+  }
+  delay(10);
 }
 
 void deepsleep_s(void){
@@ -235,7 +250,9 @@ void deepsleep_s(void){
 }
 
 void checkPresence(void){
-  // TODO
+  CourseSlot *activeslot = getActiveSlot();
+  if(digitalRead(pDetect))
+    activeslot->activity_detected = true;
   showSlot();
 }
 

@@ -18,7 +18,10 @@
 #define WIFI_STA 0
 #define HTTP_CODE_OK 200
 
+#define ESP_OK 1
+
 /* functions declared globally */
+int esp_wifi_stop(void);
 unsigned long millis(void);
 void delay(unsigned long ms);
 void pinMode(int pinNumber, int mode);

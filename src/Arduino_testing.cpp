@@ -11,6 +11,9 @@ WiFiClient _wfclient;
 
 
 /* functions with global visibility */
+int esp_wifi_stop(void){
+  return ESP_OK;
+}
 bool getLocalTime(struct tm * info, uint32_t ms){
 #ifndef FOREVERTODAY
   const time_t time_now = time(NULL);
