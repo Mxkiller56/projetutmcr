@@ -3,6 +3,7 @@
 #ifdef TESTING
 #include "Arduino_testing.h"
 #endif
+#include <time.h>
 #define NEVER 0
 // action must be executed *after* the time set
 // but you can exec it a little bit before if you wish,
