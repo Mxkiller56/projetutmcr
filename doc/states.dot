@@ -1,13 +1,14 @@
 digraph states {
   rankdir="LR";
   node [shape=circle];
-  reboot[label="redémarrage"];
+  lightsleep[label="veille légère"];
+  deepsleep[label="veille profonde"];
+  reboot[label="(re)démarrage"];
   wifico[label="connexion\nWiFi"];
   date[label="récupération\ndate"];
   ics[label="récupération\nics"];
   settings[label="paramétrage"];
   showtime[label="affichage infos"];
-  blecli[label="client\nBLE", color=blue];
   /* erreurs */
   {
     node [color=red];
@@ -20,9 +21,9 @@ digraph states {
     wifico->err_wifico [label="timeout connexion"];
     date->err_date [label="timeout ou injoignable"];
     ics->err_ics [label="timeout ou injoignable"];
-    err_wifico->settings;
-    err_date->settings;
-    err_ics->settings;
+    err_wifico->reboot;
+    err_date->reboot;
+    err_ics->reboot;
   }
   reboot->wifico;
   wifico->date;
@@ -32,5 +33,9 @@ digraph states {
   showtime->ics;
   showtime->date;
   showtime->showtime;
-  blecli->settings [color=blue,label="sur demande"];
+  showtime->settings [color=blue,label="sur demande"];
+  showtime->deepsleep[label="fin courseslot"];
+  deepsleep->reboot;
+  showtime->lightsleep[label="quand inutilisé"];
+  lightsleep->showtime[label="sur appui bouton"];
 }
