@@ -25,6 +25,9 @@ test:  $(TESTOBJS)
 simrun: $(SIMOBJS)
 	$(CC) $(CPPFLAGS) $(SIMOBJS) -o simrun
 
+doc: main.cpp
+	doxygen Doxyfile	
+
 clean:
 	rm *.o
 	rm test

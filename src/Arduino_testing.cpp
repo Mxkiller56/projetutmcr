@@ -150,6 +150,10 @@ int Stream::read(void){
   else
     return data;
 }
+/** @param buffer buffer to fill with data
+ * @param length size of data to get 
+ * @return number of bytes read
+ */
 size_t Stream::readBytes(uint8_t *buffer, size_t length){
   size_t count = 0;
     while(count < length && *contentptr != '\0') {

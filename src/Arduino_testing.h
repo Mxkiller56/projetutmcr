@@ -5,6 +5,10 @@
 #include <cstddef>
 #include <time.h>
 
+/** Mocks most of the Arduino built-in functions and
+ *  libraries used in this project.
+ */
+
 // fake values for INPUT OUTPUT
 #define OUTPUT 0
 #define INPUT 1
@@ -75,8 +79,7 @@ class WiFi {
 class Stream {
  public:
   virtual size_t available() = 0;
-  size_t readBytes(uint8_t *buffer, size_t length); /** @param buffer buffer to fill with data
-						  @param length size of data to get */
+  size_t readBytes(uint8_t *buffer, size_t length);
   int read(void);
 };
 /* note: Client is also a Stream */
