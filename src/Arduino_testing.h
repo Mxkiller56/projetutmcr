@@ -26,6 +26,7 @@
 
 /* functions declared globally */
 int esp_wifi_stop(void);
+int esp_wifi_start(void);
 unsigned long millis(void);
 void delay(unsigned long ms);
 void pinMode(int pinNumber, int mode);

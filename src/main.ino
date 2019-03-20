@@ -38,7 +38,9 @@ void showSlot(void);
 void showSlot(CourseSlot *);
 CourseSlot *getActiveSlot(void);
 void screeninfo(CourseSlot *);
+void settings_mode(void);
 void ledinfo(CourseSlot *);
+void ledsoff(void);
 void movestr(char *dest, char *src);
 int cleanstr(char *str, char def);
 
@@ -76,9 +78,12 @@ const int lVerte = 27;
 const int lRouge = 25;
 const int lOrange = 26;
 const int lBlanche = 33;
-// TODO à changer
-const int pDetect = 18;
+// buttons
 const int pBouton = 17;
+const int pSettings = 18;
+// TODO à changer
+const int pDetect = 4;
+
 
 void reboot(void){
   ESP.restart();
@@ -140,21 +145,36 @@ int cleanstr(char *str, char def){
  * @param slotinfo the slot that contains information you want to show.
  */
 void screeninfo(CourseSlot *slotinfo){
-  lcd.clear();
-  lcd.printf("%d:%d-%d:%d, %s",slotinfo->local_tm_begin_hour,
+  char summarybuf[32] = {'\0'}; // we use this because we don't want
+				// to shorten the real data
+  lcd.clear(); // below format is 00:00-00:00, location
+  lcd.printf("%02d:%02d-%02d:%02d, %s",slotinfo->local_tm_begin_hour,
 	     slotinfo->local_tm_begin_min, slotinfo->local_tm_end_hour,
 	     slotinfo->local_tm_end_min, ourlocation);
   lcd.setCursor(0,1); // next line
   if (slotinfo->getAssociatedVevent() != NULL){
     // overwriting summary via cleanstr is OK (not critical data for our program)
     cleanstr(slotinfo->getAssociatedVevent()->getSummary(),'?');
-    lcd.print(slotinfo->getAssociatedVevent()->getSummary());
+    // we copy string into another buffer
+    strncpy(summarybuf, slotinfo->getAssociatedVevent()->getSummary(),
+	    sizeof(summarybuf)-1); // strncpy does not null-terminate strings !
+    summarybuf[sizeof(summarybuf)-1] = '\0'; // so we dot it manually anyway
+    lcd.print(summarybuf); // and then show it
   }
   else {
     // no associated vevent
     lcd.print("Pas de cours");
   }
 }
+
+/** shuts all the leds off */
+void ledsoff(void){
+  digitalWrite(lVerte, LOW);
+  digitalWrite(lRouge, LOW);
+  digitalWrite(lOrange, LOW);
+  digitalWrite(lBlanche, LOW);
+}
+
 /** Changes the state of LEDs according to slotinfo.*/
 void ledinfo(CourseSlot *slotinfo){
   LedColor lcolor = slotinfo->whichColor();
@@ -200,6 +220,7 @@ void setup() {
   /* pins du detecteur de mouvement et du bouton en INPUT */
   pinMode(pDetect, INPUT);
   pinMode(pBouton, INPUT);
+  pinMode(pSettings, INPUT);
   /* allumage des leds */
   digitalWrite(lVerte, HIGH);
   digitalWrite(lRouge, HIGH);
@@ -226,6 +247,8 @@ void setup() {
   /* extinction du WiFi */
   if(esp_wifi_stop() == ESP_OK){
     Serial.println("[debug] wifi stopped");
+  } else {
+    Serial.println("[error] WIFI NOT STOPPED !");
   }
   /* programmation des tâches à venir */
   scheduleTasks();
@@ -257,6 +280,11 @@ void loop() {
   } else if (!digitalRead(pBouton) && remaining_show_ms > 0){
     remaining_show_ms = millis() - show_start_ms;
   }
+  if (digitalRead(pSettings)){
+    delay(500); // avoid accidental activation
+    if (digitalRead(pSettings))
+	settings_mode();
+  }
   if (millis() - last_scroll > 250){
     last_scroll = millis();
     lcd.scrollDisplayLeft();
@@ -272,8 +300,9 @@ void deepsleep_s(void){
 
 void checkPresence(void){
   CourseSlot *activeslot = getActiveSlot();
-  if(digitalRead(pDetect))
-    activeslot->activity_detected = true;
+  if (activeslot != NULL)
+    if(digitalRead(pDetect))
+      activeslot->activity_detected = true;
   showSlot();
 }
 
@@ -327,6 +356,15 @@ void scheduleTasks(void){
 
 /** when called, makes the object enter setting mode */
 void settings_mode (){
+  Serial.println("[debug] launching settings mode, attempting wifi connection");
+  if (esp_wifi_start() == ESP_OK)
+    Serial.println("[debug] call to esp_wifi_start() successful");
+  else {
+    Serial.println("[error] esp_wifi_start() returned error status, aborting");
+    return; // abort
+  }
+  wifico(); // calling our own connection function
+  Serial.println("[debug] wifi connected, launching server"); // if we're here we haven't rebooted
   WebServer2 ws;
   ws.begin(&pref);
   ws.blocking_run();
@@ -434,6 +472,12 @@ void showSlot(CourseSlot *cslot){
 void showSlot(void){
   if (getActiveSlot() != NULL)
     showSlot(getActiveSlot());
+  else { // no active slot found, print message and shut off leds
+    Serial.println("[debug] no active slot for now");
+    lcd.clear();
+    lcd.println("Nothing planned");
+    ledsoff();
+  }
 }
 
 /** Returns the currently active slot.
