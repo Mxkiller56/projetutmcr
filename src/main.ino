@@ -364,6 +364,12 @@ void settings_mode (){
     return; // abort
   }
   wifico(); // calling our own connection function
+  lcd.clear();
+  #ifndef TESTING
+  lcd.println(WiFi.localIP());
+  #endif
+  lcd.setCursor(0,1);
+  lcd.println("settings mode");
   Serial.println("[debug] wifi connected, launching server"); // if we're here we haven't rebooted
   WebServer2 ws;
   ws.begin(&pref);
