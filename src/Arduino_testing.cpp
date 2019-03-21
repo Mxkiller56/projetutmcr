@@ -14,6 +14,9 @@ WiFiClient _wfclient;
 int esp_wifi_stop(void){
   return ESP_OK;
 }
+int esp_wifi_start(void){
+  return ESP_OK;
+}
 bool getLocalTime(struct tm * info, uint32_t ms){
 #ifndef FOREVERTODAY
   const time_t time_now = time(NULL);
@@ -83,7 +86,7 @@ size_t Preferences::getString(const char *key, char *value, size_t maxlen){
 }
 
 void WebServer2::begin(Preferences *preferences){}
-void WebServer2::blocking_run(void){for(;;){/* it never returns */}}
+void WebServer2::blocking_run(void){for(;;){delay(1000000);/* it never returns */}}
 
 
 bool WiFi::disconnect(bool disco){/* french pun :)*/
